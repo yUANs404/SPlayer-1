@@ -83,21 +83,6 @@
               </n-tag>
             </template>
             <!-- MV -->
-            <n-tag
-              v-if="song?.mv"
-              :bordered="false"
-              class="mv"
-              type="warning"
-              round
-              @click.stop="
-                router.push({
-                  name: 'video',
-                  query: { id: song.mv },
-                })
-              "
-            >
-              MV
-            </n-tag>
             <!-- 脏标 -->
             <n-tag
               v-if="
@@ -114,19 +99,14 @@
             <!-- 歌手 -->
             <template v-if="settingStore.showSongArtist">
               <div v-if="Array.isArray(song.artists)" class="artists">
-                <n-text
-                  v-for="ar in song.artists"
-                  :key="ar.id"
-                  class="ar"
-                  @click="openJumpArtist(song.artists, ar.id)"
-                >
+                <n-text v-for="ar in song.artists" :key="ar.id" class="ar">
                   {{ settingStore.hideBracketedContent ? removeBrackets(ar.name) : ar.name }}
                 </n-text>
               </div>
               <div v-else-if="song.type === 'radio'" class="artists">
                 <n-text class="ar"> 电台节目 </n-text>
               </div>
-              <div v-else class="artists" @click="openJumpArtist(song.artists)">
+              <div v-else class="artists">
                 <n-text class="ar">
                   {{
                     settingStore.hideBracketedContent
@@ -144,39 +124,19 @@
         v-if="song.type !== 'radio' && !hiddenAlbum && !isSmallScreen && settingStore.showSongAlbum"
         class="album text-hidden"
       >
-        <n-text
-          v-if="isObject(song.album)"
-          class="album-text"
-          @click="
-            router.push({
-              name: 'album',
-              query: { id: song.album?.id },
-            })
-          "
-        >
-          {{ albumName }}
-        </n-text>
-        <n-text v-else class="album-text">
+        <n-text class="album-text">
           {{ albumName }}
         </n-text>
       </div>
       <!-- 操作 -->
       <div
-        v-if="song.type !== 'radio' && settingStore.showSongOperations"
+        v-if="song.type !== 'radio' && settingStore.showSongOperations && isSmallScreen"
         class="actions"
         @click.stop
         @dblclick.stop
       >
-        <!-- 喜欢歌曲 -->
-        <SvgIcon
-          v-if="!isSmallScreen"
-          :name="dataStore.isLikeSong(song.id) ? 'Favorite' : 'FavoriteBorder'"
-          :size="20"
-          @click.stop="toLikeSong(song, !dataStore.isLikeSong(song.id))"
-          @delclick.stop
-        />
         <!-- 移动端菜单 -->
-        <SvgIcon v-else name="More" :size="20" @click.stop="emit('show-menu', $event)" />
+        <SvgIcon name="More" :size="20" @click.stop="emit('show-menu', $event)" />
       </div>
       <!-- 更新日期 -->
       <n-text v-if="song.type === 'radio' && !isSmallScreen" class="meta date" depth="3">
@@ -200,11 +160,9 @@
 
 <script setup lang="ts">
 import { QualityType, type SongType } from "@/types/main";
-import { useStatusStore, useMusicStore, useDataStore, useSettingStore } from "@/stores";
+import { useStatusStore, useMusicStore, useSettingStore } from "@/stores";
 import { formatNumber, formatFileSize } from "@/utils/helper";
-import { openJumpArtist } from "@/utils/modal";
 import { removeBrackets } from "@/utils/format";
-import { toLikeSong } from "@/utils/auth";
 import { isObject } from "lodash-es";
 import { formatTimestamp, msToTime } from "@/utils/time";
 import { usePlayerController } from "@/core/player/PlayerController";
@@ -227,8 +185,6 @@ const emit = defineEmits<{
 }>();
 
 const { isSmallScreen } = useMobile();
-const router = useRouter();
-const dataStore = useDataStore();
 const musicStore = useMusicStore();
 const statusStore = useStatusStore();
 const settingStore = useSettingStore();

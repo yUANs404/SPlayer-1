@@ -16,11 +16,11 @@
 <script setup lang="ts">
 import type { DropdownOption } from "naive-ui";
 import type { CoverType } from "@/types/main";
-import { renderIcon, copyData, getShareUrl } from "@/utils/helper";
+import { renderIcon, copyData } from "@/utils/helper";
 import { useMusicStore, useStatusStore } from "@/stores";
 
 const emit = defineEmits<{
-  // 直接搜索
+  // 直接播放
   toPlay: [item: CoverType];
 }>();
 
@@ -48,6 +48,7 @@ const openDropdown = async (
         {
           key: "open",
           label: "查看详情",
+          show: type === "playlist",
           props: {
             onClick: () =>
               router.push({
@@ -81,28 +82,11 @@ const openDropdown = async (
         },
         {
           key: "code-name",
-          label: `复制${type === "playlist" ? "歌单" : type === "album" ? "专辑" : type === "video" ? "视频" : "电台"}名称`,
+          label: "复制歌单名称",
           props: {
             onClick: () => copyData(item.name),
           },
           icon: renderIcon("Copy", { size: 18 }),
-        },
-        {
-          key: "code-id",
-          label: `复制${type === "playlist" ? "歌单" : type === "album" ? "专辑" : type === "video" ? "视频" : "电台"} ID`,
-          props: {
-            onClick: () => copyData(item.id),
-          },
-          icon: renderIcon("Copy", { size: 18 }),
-        },
-        {
-          key: "share",
-          label: `分享${type === "playlist" ? "歌单" : type === "album" ? "专辑" : type === "video" ? "视频" : "电台"}链接`,
-          show: item.id !== 0 && item.id?.toString().length < 16,
-          props: {
-            onClick: () => copyData(getShareUrl(type, item.id), "已复制分享链接到剪贴板"),
-          },
-          icon: renderIcon("Share", { size: 18 }),
         },
       ];
       // 显示菜单

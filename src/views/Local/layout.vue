@@ -97,36 +97,34 @@
           </template>
         </n-input>
         <!-- Tab 切换 -->
-        <template v-if="settingStore.useOnlineService">
-          <n-dropdown
-            v-if="!isLargeDesktop"
-            :options="tabDropdownOptions"
-            :value="localType"
-            trigger="click"
-            placement="bottom-end"
-            @select="handleTabUpdate"
-          >
-            <n-button :disabled="tabsDisabled" :focusable="false" strong secondary round>
-              {{ currentTabLabel }}
-              <template #icon>
-                <SvgIcon name="Down" />
-              </template>
-            </n-button>
-          </n-dropdown>
-          <n-tabs
-            v-else
-            v-model:value="localType"
-            class="tabs"
-            type="segment"
-            @update:value="handleTabUpdate"
-          >
-            <n-tab :disabled="tabsDisabled" name="local-songs"> 单曲 </n-tab>
-            <n-tab :disabled="tabsDisabled" name="local-artists"> 歌手 </n-tab>
-            <n-tab :disabled="tabsDisabled" name="local-albums"> 专辑 </n-tab>
-            <n-tab :disabled="tabsDisabled" name="local-playlists"> 歌单 </n-tab>
-            <n-tab :disabled="tabsDisabled" name="local-folders"> 文件夹 </n-tab>
-          </n-tabs>
-        </template>
+        <n-dropdown
+          v-if="!isLargeDesktop"
+          :options="tabDropdownOptions"
+          :value="localType"
+          trigger="click"
+          placement="bottom-end"
+          @select="handleTabUpdate"
+        >
+          <n-button :disabled="tabsDisabled" :focusable="false" strong secondary round>
+            {{ currentTabLabel }}
+            <template #icon>
+              <SvgIcon name="Down" />
+            </template>
+          </n-button>
+        </n-dropdown>
+        <n-tabs
+          v-else
+          v-model:value="localType"
+          class="tabs"
+          type="segment"
+          @update:value="handleTabUpdate"
+        >
+          <n-tab :disabled="tabsDisabled" name="local-songs"> 单曲 </n-tab>
+          <n-tab :disabled="tabsDisabled" name="local-artists"> 歌手 </n-tab>
+          <n-tab :disabled="tabsDisabled" name="local-albums"> 专辑 </n-tab>
+          <n-tab :disabled="tabsDisabled" name="local-playlists"> 歌单 </n-tab>
+          <n-tab :disabled="tabsDisabled" name="local-folders"> 文件夹 </n-tab>
+        </n-tabs>
       </n-flex>
     </n-flex>
     <!-- 路由 -->
@@ -275,8 +273,6 @@ const isLocalFoldersRoute = computed<boolean>(
 
 // 页面标题
 const pageTitle = computed<string>(() => {
-  if (settingStore.useOnlineService) return "本地歌曲";
-  // 本地模式
   const routeName = router.currentRoute.value?.name as string;
   switch (routeName) {
     case "local-songs":

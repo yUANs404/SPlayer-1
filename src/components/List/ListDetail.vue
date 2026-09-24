@@ -44,13 +44,6 @@
             </n-ellipsis>
             <template v-else>
               {{ titleText }}
-              <!-- 隐私歌单 -->
-              <n-popover v-if="detailData?.privacy === 10" :show-arrow="false" placement="right">
-                <template #trigger>
-                  <SvgIcon :depth="3" name="EyeLock" size="22" />
-                </template>
-                <n-text>隐私歌单</n-text>
-              </n-popover>
             </template>
           </n-h2>
           <n-collapse-transition :show="!listScrolling" class="collapse">
@@ -77,12 +70,7 @@
                   v-if="config.showArtist && Array.isArray(detailData.artists)"
                   class="artists text-hidden"
                 >
-                  <n-text
-                    v-for="(ar, arIndex) in detailData.artists"
-                    :key="arIndex"
-                    class="ar"
-                    @click="openJumpArtist(detailData.artists, ar.id)"
-                  >
+                  <n-text v-for="(ar, arIndex) in detailData.artists" :key="arIndex" class="ar">
                     {{
                       settingStore.hideBracketedContent
                         ? removeBrackets(ar.name)
@@ -90,11 +78,7 @@
                     }}
                   </n-text>
                 </div>
-                <div
-                  v-else-if="config.showArtist"
-                  class="artists text-hidden"
-                  @click="openJumpArtist(detailData.artists || '')"
-                >
+                <div v-else-if="config.showArtist" class="artists text-hidden">
                   <n-text class="ar">
                     {{
                       settingStore.hideBracketedContent
@@ -142,7 +126,6 @@
                     :key="index"
                     :bordered="false"
                     round
-                    @click="handleTagClick(item)"
                   >
                     {{ item }}
                   </n-tag>
@@ -200,27 +183,6 @@
                   <SvgIcon name="Search" />
                 </template>
               </n-input>
-              <!-- 查看评论 -->
-              <n-tabs
-                v-if="!hideCommentTab"
-                v-model:value="currentTab"
-                class="tabs"
-                type="segment"
-                @update:value="handleTabChange"
-              >
-                <n-tab name="songs">
-                  歌曲
-                  <n-text v-if="detailData?.count" class="count" depth="3">
-                    {{ detailData?.count }}
-                  </n-text>
-                </n-tab>
-                <n-tab name="comments">
-                  评论
-                  <n-text v-if="detailData?.commentCount" class="count" depth="3">
-                    {{ formatCommentCount(detailData.commentCount) }}
-                  </n-text>
-                </n-tab>
-              </n-tabs>
             </n-flex>
           </n-flex>
         </div>
@@ -239,10 +201,10 @@
 import type { CoverType, SongType } from "@/types/main";
 import type { DropdownOption } from "naive-ui";
 import { coverLoaded, formatNumber } from "@/utils/helper";
-import { removeBrackets, formatCommentCount } from "@/utils/format";
+import { removeBrackets } from "@/utils/format";
 import { renderToolbar } from "@/utils/meta";
 import { formatTimestamp } from "@/utils/time";
-import { openDescModal, openJumpArtist } from "@/utils/modal";
+import { openDescModal } from "@/utils/modal";
 import { useSettingStore } from "@/stores";
 
 interface ListDetailConfig {
@@ -265,7 +227,6 @@ interface Props {
   listScrolling: boolean;
   searchValue: string;
   showSearch?: boolean;
-  hideCommentTab?: boolean;
   config: ListDetailConfig;
   titleText?: string;
   playButtonText?: string;
@@ -274,7 +235,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   showSearch: true,
-  hideCommentTab: false,
   titleText: "",
   playButtonText: "播放",
   moreOptions: () => [],
@@ -283,22 +243,9 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   "update:searchValue": [value: string];
   "play-all": [];
-  "tab-change": [value: "songs" | "comments"];
 }>();
 
-const router = useRouter();
 const settingStore = useSettingStore();
-
-// 当前 tab
-const currentTab = ref<"songs" | "comments">("songs");
-
-// 切换资源时重置 tab
-watch(
-  () => props.detailData?.id,
-  () => {
-    currentTab.value = "songs";
-  },
-);
 
 // 标题文本
 const titleText = computed(() => {
@@ -317,14 +264,6 @@ const handleSearch = (val: string) => {
   emit("update:searchValue", val);
 };
 
-// 处理标签点击
-const handleTagClick = (tag: string) => {
-  router.push({
-    name: "discover-playlists",
-    query: { cat: tag },
-  });
-};
-
 // 处理描述点击
 const handleDescriptionClick = () => {
   if (props.detailData?.description) {
@@ -332,12 +271,6 @@ const handleDescriptionClick = () => {
       props.titleText || (props.config.titleType === "ellipsis" ? "专辑简介" : "节目简介");
     openDescModal(props.detailData.description, title);
   }
-};
-
-// 处理 tab 切换
-const handleTabChange = (value: "songs" | "comments") => {
-  currentTab.value = value;
-  emit("tab-change", value);
 };
 </script>
 

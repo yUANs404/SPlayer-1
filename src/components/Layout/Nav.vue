@@ -31,13 +31,9 @@
     </n-flex>
     <!-- 主内容 -->
     <n-flex :wrap="false" justify="end" class="nav-main">
-      <!-- 搜索 -->
-      <SearchInp v-if="settingStore.useOnlineService" />
       <!-- 可拖拽 -->
       <div v-if="isDesktop" class="nav-drag" />
       <n-flex align="center">
-        <!-- 用户 -->
-        <User v-if="settingStore.useOnlineService" />
         <!-- 设置菜单 -->
         <n-dropdown :options="setOptions" trigger="click" @select="setSelect">
           <n-button :focusable="false" title="设置" tertiary circle>

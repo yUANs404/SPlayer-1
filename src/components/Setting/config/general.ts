@@ -1,77 +1,16 @@
-import { useDataStore, useMusicStore, useSettingStore } from "@/stores";
-import { usePlayerController } from "@/core/player/PlayerController";
+import { useDataStore, useSettingStore } from "@/stores";
 import { isElectron } from "@/utils/env";
-import { openExcludeComment } from "@/utils/modal";
-import { sendRegisterProtocol } from "@/utils/protocol";
 import { SettingConfig } from "@/types/settings";
 import { NAlert } from "naive-ui";
 
 export const useGeneralSettings = (): SettingConfig => {
   const dataStore = useDataStore();
-  const musicStore = useMusicStore();
   const settingStore = useSettingStore();
-  const player = usePlayerController();
-
-  const useOnlineService = ref(settingStore.useOnlineService);
-
-  const handleModeChange = (val: boolean) => {
-    if (val) {
-      window.$dialog.warning({
-        title: "开启在线服务",
-        content: "确定开启软件的在线服务？更改将在热重载后生效！",
-        positiveText: "开启",
-        negativeText: "取消",
-        onPositiveClick: async () => {
-          useOnlineService.value = true;
-          settingStore.useOnlineService = true;
-          // 清空播放列表
-          await player.cleanPlayList();
-          // 清理播放数据
-          dataStore.$reset();
-          musicStore.$reset();
-          // 清空本地数据
-          localStorage.removeItem("data-store");
-          localStorage.removeItem("music-store");
-          // 热重载
-          window.location.reload();
-        },
-      });
-    } else {
-      window.$dialog.warning({
-        title: "关闭在线服务",
-        content: "确定关闭软件的在线服务？关闭后将只能播放本地音乐！更改将在热重载后生效！",
-        positiveText: "关闭",
-        negativeText: "取消",
-        onPositiveClick: async () => {
-          useOnlineService.value = false;
-          settingStore.useOnlineService = false;
-          // 清空播放列表
-          await player.cleanPlayList();
-          // 清理播放数据
-          dataStore.$reset();
-          musicStore.$reset();
-          // 清空本地数据
-          localStorage.removeItem("data-store");
-          localStorage.removeItem("music-store");
-          // 热重载
-          window.location.reload();
-        },
-        onNegativeClick: () => {
-          useOnlineService.value = true;
-          settingStore.useOnlineService = true;
-        },
-      });
-    }
-  };
 
   // 任务栏进度
   const closeTaskbarProgress = (val: boolean) => {
     if (!isElectron) return;
     if (!val) window.electron.ipcRenderer.send("set-bar", "none");
-  };
-  // Orpheus 协议
-  const handleOrpheusChange = async (isRegistry: boolean) => {
-    sendRegisterProtocol("orpheus", isRegistry);
   };
 
   // --- Backup & Restore Logic (from other.ts) ---
@@ -198,16 +137,6 @@ export const useGeneralSettings = (): SettingConfig => {
         show: isElectron,
         items: [
           {
-            key: "useOnlineService",
-            label: "在线服务",
-            type: "switch",
-            description: "是否开启软件的在线服务",
-            value: computed({
-              get: () => useOnlineService.value,
-              set: (v) => handleModeChange(v),
-            }),
-          },
-          {
             key: "closeAppMethod",
             label: "关闭软件时",
             type: "select",
@@ -245,20 +174,6 @@ export const useGeneralSettings = (): SettingConfig => {
             }),
           },
           {
-            key: "orpheusProtocol",
-            label: "通过 Orpheus 协议唤起本应用",
-            type: "switch",
-            description:
-              "该协议通常用于官方网页端唤起官方客户端， 启用后可能导致官方客户端无法被唤起",
-            value: computed({
-              get: () => settingStore.registryProtocol.orpheus,
-              set: (v) => {
-                settingStore.registryProtocol.orpheus = v;
-                handleOrpheusChange(v);
-              },
-            }),
-          },
-          {
             key: "checkUpdateOnStart",
             label: "自动检查更新",
             type: "switch",
@@ -266,95 +181,6 @@ export const useGeneralSettings = (): SettingConfig => {
             value: computed({
               get: () => settingStore.checkUpdateOnStart,
               set: (v) => (settingStore.checkUpdateOnStart = v),
-            }),
-          },
-        ],
-      },
-      {
-        title: "搜索设置",
-        items: [
-          {
-            key: "showSearchHistory",
-            label: "显示搜索历史",
-            description: "是否在搜索框的默认显示内容中显示当前搜索历史",
-            type: "switch",
-            value: computed({
-              get: () => settingStore.showSearchHistory,
-              set: (v) => (settingStore.showSearchHistory = v),
-            }),
-          },
-          {
-            key: "showHotSearch",
-            label: "显示热搜榜",
-            type: "switch",
-            show: computed(() => settingStore.useOnlineService),
-            description: "是否在搜索框的默认显示内容中显示热搜榜单",
-            value: computed({
-              get: () => settingStore.showHotSearch,
-              set: (v) => (settingStore.showHotSearch = v),
-            }),
-          },
-          {
-            key: "enableSearchKeyword",
-            label: "搜索关键词建议",
-            type: "switch",
-            show: computed(() => settingStore.useOnlineService),
-            description: "将搜索框闲置时的默认显示内容替换为搜索关键词建议",
-            value: computed({
-              get: () => settingStore.enableSearchKeyword,
-              set: (v) => (settingStore.enableSearchKeyword = v),
-            }),
-          },
-          {
-            key: "searchInputBehavior",
-            label: "搜索框行为",
-            type: "select",
-            description: "自定义搜索框的行为模式",
-            options: [
-              { label: "保留搜索词", value: "normal" },
-              { label: "失焦后清空", value: "clear" },
-              { label: "同步搜索词", value: "sync" },
-            ],
-            value: computed({
-              get: () => settingStore.searchInputBehavior,
-              set: (v) => (settingStore.searchInputBehavior = v),
-            }),
-          },
-          {
-            key: "hideBracketedContent",
-            label: "隐藏括号与别名",
-            type: "switch",
-            description: "隐藏歌曲名与专辑名中的括号内容和别名",
-            value: computed({
-              get: () => settingStore.hideBracketedContent,
-              set: (v) => (settingStore.hideBracketedContent = v),
-            }),
-          },
-          {
-            key: "configExcludeComment",
-            label: "评论排除配置",
-            type: "button",
-            description: "配置排除评论的规则（关键词或正则表达式）",
-            buttonLabel: "配置",
-            action: openExcludeComment,
-          },
-        ],
-      },
-      {
-        title: "其他设置",
-        items: [
-          {
-            key: "shareUrlFormat",
-            label: "分享链接格式",
-            type: "select",
-            description: "自定义分享链接的生成格式",
-            options: [
-              { label: "网页版", value: "web" },
-              { label: "移动版", value: "mobile" },
-            ],
-            value: computed({
-              get: () => settingStore.shareUrlFormat,
-              set: (v) => (settingStore.shareUrlFormat = v),
             }),
           },
         ],

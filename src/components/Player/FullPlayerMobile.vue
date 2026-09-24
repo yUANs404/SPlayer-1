@@ -29,22 +29,6 @@
               <PlayerData :center="false" :light="false" class="mobile-data" />
             </div>
             <div class="info-actions">
-              <!-- 喜欢 -->
-              <div
-                v-if="musicStore.playSong.type !== 'radio'"
-                class="action-btn"
-                @click="
-                  toLikeSong(musicStore.playSong, !dataStore.isLikeSong(musicStore.playSong.id))
-                "
-              >
-                <SvgIcon
-                  :name="
-                    dataStore.isLikeSong(musicStore.playSong.id) ? 'Favorite' : 'FavoriteBorder'
-                  "
-                  :size="26"
-                  :class="{ liked: dataStore.isLikeSong(musicStore.playSong.id) }"
-                />
-              </div>
               <!-- 添加到歌单 -->
               <div
                 class="action-btn"
@@ -65,16 +49,13 @@
           <!-- 主控制按钮 -->
           <div class="control-section">
             <!-- 随机模式 -->
-            <template v-if="musicStore.playSong.type !== 'radio' && !statusStore.personalFmMode">
-              <div class="mode-btn" @click.stop="player.toggleShuffle()">
-                <SvgIcon
-                  :name="statusStore.shuffleIcon"
-                  :size="24"
-                  :depth="statusStore.shuffleMode === 'off' ? 3 : 1"
-                />
-              </div>
-            </template>
-            <div v-else class="placeholder"></div>
+            <div class="mode-btn" @click.stop="player.toggleShuffle()">
+              <SvgIcon
+                :name="statusStore.shuffleIcon"
+                :size="24"
+                :depth="statusStore.shuffleMode === 'off' ? 3 : 1"
+              />
+            </div>
 
             <!-- 上一曲 -->
             <div class="ctrl-btn" @click.stop="player.nextOrPrev('prev')">
@@ -108,16 +89,13 @@
             </div>
 
             <!-- 循环模式 -->
-            <template v-if="musicStore.playSong.type !== 'radio' && !statusStore.personalFmMode">
-              <div class="mode-btn" @click.stop="player.toggleRepeat()">
-                <SvgIcon
-                  :name="statusStore.repeatIcon"
-                  :size="24"
-                  :depth="statusStore.repeatMode === 'off' ? 3 : 1"
-                />
-              </div>
-            </template>
-            <div v-else class="placeholder"></div>
+            <div class="mode-btn" @click.stop="player.toggleRepeat()">
+              <SvgIcon
+                :name="statusStore.repeatIcon"
+                :size="24"
+                :depth="statusStore.repeatMode === 'off' ? 3 : 1"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -135,20 +113,6 @@
               }}
             </div>
             <div class="artist text-hidden">{{ artistName }}</div>
-          </div>
-          <!-- 喜欢按钮 -->
-          <div
-            v-if="musicStore.playSong.type !== 'radio'"
-            class="action-btn"
-            @click.stop="
-              toLikeSong(musicStore.playSong, !dataStore.isLikeSong(musicStore.playSong.id))
-            "
-          >
-            <SvgIcon
-              :name="dataStore.isLikeSong(musicStore.playSong.id) ? 'Favorite' : 'FavoriteBorder'"
-              :size="24"
-              :class="{ liked: dataStore.isLikeSong(musicStore.playSong.id) }"
-            />
           </div>
         </div>
         <div class="lyric-main">
@@ -171,17 +135,15 @@
 
 <script setup lang="ts">
 import { useSwipe } from "@vueuse/core";
-import { useMusicStore, useStatusStore, useDataStore, useSettingStore } from "@/stores";
+import { useMusicStore, useStatusStore, useSettingStore } from "@/stores";
 import { usePlayerController } from "@/core/player/PlayerController";
 import { useTimeFormat } from "@/composables/useTimeFormat";
-import { toLikeSong } from "@/utils/auth";
 import { openPlaylistAdd } from "@/utils/modal";
 import { removeBrackets } from "@/utils/format";
 
 const musicStore = useMusicStore();
 const statusStore = useStatusStore();
 const settingStore = useSettingStore();
-const dataStore = useDataStore();
 const player = usePlayerController();
 const { timeDisplay, toggleTimeFormat } = useTimeFormat();
 

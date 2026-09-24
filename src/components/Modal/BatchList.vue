@@ -39,36 +39,14 @@
         </n-popover>
       </n-flex>
       <n-flex class="menu">
-        <!-- 批量下载 -->
-        <n-button
-          v-if="statusStore.isDeveloperMode"
-          :disabled="!checkCount || isLocal"
-          type="primary"
-          strong
-          secondary
-          @click="handleBatchDownloadClick"
-        >
-          <template #icon>
-            <SvgIcon name="Download" />
-          </template>
-          批量下载
-        </n-button>
-        <!-- 批量删除 -->
+        <!-- 从歌单删除 -->
         <n-button
           v-if="playListId"
           :disabled="!checkCount"
           type="error"
           strong
           secondary
-          @click="
-            deleteSongs(
-              playListId,
-              checkSongData.map((item) => item.id),
-              {
-                songName: checkSongData.length === 1 ? checkSongData[0].name : undefined,
-              },
-            )
-          "
+          @click="handleRemoveFromPlaylist"
         >
           <template #icon>
             <SvgIcon name="Delete" />
@@ -112,13 +90,8 @@ import type { DataTableColumns, DataTableRowKey } from "naive-ui";
 import type { SongType } from "@/types/main";
 import { isArray, isObject } from "lodash-es";
 import { openPlaylistAdd } from "@/utils/modal";
-import { deleteSongs } from "@/utils/auth";
-import { NInput, NInputNumber, NButton, NText, NFlex } from "naive-ui";
-import { useLocalStore, useStatusStore } from "@/stores";
-import { openDownloadSongs } from "@/utils/modal";
-
-const localStore = useLocalStore();
-const statusStore = useStatusStore();
+import { NInput, NInputNumber, NButton, NText } from "naive-ui";
+import { useLocalStore } from "@/stores";
 
 interface DataType {
   key?: number;
@@ -134,6 +107,8 @@ const props = defineProps<{
   data: SongType[];
   isLocal: boolean;
   playListId?: number;
+  /** 操作成功回调 */
+  onSuccess?: () => void;
 }>();
 
 // 选中数据
@@ -229,6 +204,32 @@ const handleRangeSelect = () => {
   checkSongData.value = selectedRows.map((row) => row.origin).filter((song) => song) as SongType[];
 };
 
+// 从本地歌单移除
+const handleRemoveFromPlaylist = () => {
+  if (!props.playListId) return;
+  window.$dialog.warning({
+    title: "删除歌曲",
+    content:
+      checkSongData.value.length > 1
+        ? "确定从歌单中删除这些选中的歌曲吗？"
+        : `确定从歌单中删除歌曲 ${checkSongData.value[0]?.name || ""} 吗？`,
+    positiveText: "删除",
+    negativeText: "取消",
+    onPositiveClick: async () => {
+      const success = await localStore.removeSongsFromLocalPlaylist(
+        props.playListId!,
+        checkSongData.value.map((item) => item.id.toString()),
+      );
+      if (success) {
+        window.$message.success("删除成功");
+        props.onSuccess?.();
+      } else {
+        window.$message.error("删除失败");
+      }
+    },
+  });
+};
+
 // 删除本地歌曲
 const handleDeleteLocalSongs = () => {
   const confirmText = ref("");
@@ -302,15 +303,6 @@ const handleDeleteLocalSongs = () => {
       return true;
     },
   });
-};
-
-// 批量下载处理
-const handleBatchDownloadClick = () => {
-  if (checkSongData.value.length === 0) {
-    window.$message.warning("请选择要下载的歌曲");
-    return;
-  }
-  openDownloadSongs(checkSongData.value);
 };
 </script>
 

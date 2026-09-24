@@ -1,43 +1,19 @@
 <template>
   <n-flex :size="8" align="center" class="right-menu">
     <!-- 音质 -->
-    <template v-if="settingStore.showPlayerQuality">
-      <n-popselect
-        v-if="isOnlineSong"
-        v-model:show="showQualityPopover"
-        :value="currentPlayingLevel"
-        :options="qualityOptions"
-        trigger="manual"
-        placement="top"
-        @update:value="handleQualitySelect"
-        @clickoutside="handleClickOutside"
-      >
-        <template #header>
-          <n-flex class="quality-title" size="small" vertical>
-            <span class="title">音质切换</span>
-            <span class="tip">以账号具体权限为准</span>
-          </n-flex>
-        </template>
-        <div ref="qualityTagRef">
-          <n-tag
-            class="quality-tag hidden"
-            type="primary"
-            size="small"
-            @click.stop="handleQualityClick"
-          >
-            {{ getQualityName(statusStore.songQuality) }}
-          </n-tag>
-        </div>
-      </n-popselect>
-      <n-popover v-else trigger="hover" placement="top" :show-arrow="false">
-        <template #trigger>
-          <n-tag class="quality-tag hidden" type="primary" size="small">
-            {{ getQualityName(statusStore.songQuality) }}
-          </n-tag>
-        </template>
-        <span>当前歌曲不支持切换音质</span>
-      </n-popover>
-    </template>
+    <n-popover
+      v-if="settingStore.showPlayerQuality"
+      trigger="hover"
+      placement="top"
+      :show-arrow="false"
+    >
+      <template #trigger>
+        <n-tag class="quality-tag hidden" type="primary" size="small">
+          {{ statusStore.songQuality }}
+        </n-tag>
+      </template>
+      <span>当前音质</span>
+    </n-popover>
     <!-- 桌面歌词 -->
     <n-badge
       v-if="isElectron && settingStore.fullscreenPlayerElements.desktopLyric"
@@ -82,7 +58,6 @@
     </n-popover>
     <!-- 播放列表 -->
     <n-badge
-      v-if="!statusStore.personalFmMode"
       :value="dataStore.playList?.length ?? 0"
       :show="settingStore.showPlaylistCount"
       :max="9999"
@@ -99,50 +74,17 @@
 
 <script setup lang="ts">
 import { usePlayerController } from "@/core/player/PlayerController";
-import { useDataStore, useSettingStore, useStatusStore, useMusicStore } from "@/stores";
+import { useDataStore, useSettingStore, useStatusStore } from "@/stores";
 import { isElectron } from "@/utils/env";
 import { renderIcon } from "@/utils/helper";
 import { openAutoClose, openChangeRate, openEqualizer, openABLoop } from "@/utils/modal";
 import { useAudioManager } from "@/core/player/AudioManager";
 import type { DropdownOption } from "naive-ui";
-import { useQualityControl } from "@/composables/useQualityControl";
 
 const dataStore = useDataStore();
 const statusStore = useStatusStore();
 const settingStore = useSettingStore();
-const musicStore = useMusicStore();
 const player = usePlayerController();
-
-const {
-  currentPlayingLevel,
-  qualityOptions,
-  loadQualities,
-  handleQualitySelect,
-  getQualityName,
-  isOnlineSong,
-} = useQualityControl();
-
-const showQualityPopover = ref(false);
-const qualityTagRef = ref<HTMLElement | null>(null);
-
-const handleQualityClick = async () => {
-  if (showQualityPopover.value) {
-    showQualityPopover.value = false;
-  } else {
-    await loadQualities();
-    if (qualityOptions.value.length > 0) {
-      showQualityPopover.value = true;
-    }
-  }
-};
-
-// 点击外部关闭音质选择
-const handleClickOutside = (e: MouseEvent) => {
-  if (qualityTagRef.value && qualityTagRef.value.contains(e.target as Node)) {
-    return;
-  }
-  showQualityPopover.value = false;
-};
 
 // 更多功能
 const audioManager = useAudioManager();
@@ -193,24 +135,6 @@ const handleControls = (key: string) => {
       break;
   }
 };
-
-// 更新音质数据
-watch(
-  () => musicStore.playSong.id,
-  async () => {
-    statusStore.availableQualities = [];
-    await loadQualities();
-    if (showQualityPopover.value && statusStore.availableQualities.length === 0) {
-      showQualityPopover.value = false;
-    }
-  },
-);
-
-// 监听 VIP 状态或设置变化，重新加载音质
-watch([() => dataStore.userData.vipType, () => settingStore.disableAiAudio], async () => {
-  statusStore.availableQualities = [];
-  await loadQualities();
-});
 </script>
 
 <style scoped lang="scss">

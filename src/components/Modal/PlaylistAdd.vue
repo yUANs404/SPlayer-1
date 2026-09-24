@@ -1,27 +1,26 @@
-<!-- 添加到歌单 -->
+<!-- 添加到歌单（本地歌单） -->
 <template>
   <div class="playlist-add">
-    <!-- 在线歌曲只能添加到在线歌单 -->
-    <template v-if="!isLocal">
-      <n-scrollbar style="max-height: 70vh">
-        <n-list class="playlists-list" hoverable clickable>
-          <!-- 新建歌单 -->
-          <n-list-item class="playlist add" @click="openCreatePlaylist">
-            <template #prefix>
-              <SvgIcon name="Add" :size="20" />
-            </template>
-            <n-thing title="创建新歌单" />
-          </n-list-item>
-          <!-- 已有歌单 -->
+    <n-scrollbar style="max-height: 70vh">
+      <n-list class="playlists-list" hoverable clickable>
+        <!-- 新建本地歌单 -->
+        <n-list-item class="playlist add" @click="openCreatePlaylist(true)">
+          <template #prefix>
+            <SvgIcon name="Add" :size="20" />
+          </template>
+          <n-thing title="创建新歌单" />
+        </n-list-item>
+        <!-- 本地歌单列表 -->
+        <template v-if="localPlaylists.length > 0">
           <n-list-item
-            v-for="(item, index) in onlinePlaylists"
-            :key="index"
+            v-for="item in localPlaylists"
+            :key="item.id"
             class="playlist"
-            @click="addToOnlinePlaylist(Number(item?.id), index)"
+            @click="addToLocalPlaylist(item.id)"
           >
             <template #prefix>
               <n-image
-                :src="item?.coverSize?.s || '/images/album.jpg?asset'"
+                :src="item.cover || '/images/album.jpg?asset'"
                 class="cover"
                 preview-disabled
                 lazy
@@ -34,71 +33,25 @@
                 </template>
               </n-image>
             </template>
-            <n-thing :title="index === 0 ? '我喜欢的音乐' : item.name">
+            <n-thing :title="item.name">
               <template #description>
-                <n-text depth="3" class="size">{{ item.count }} 首音乐</n-text>
+                <n-text depth="3" class="size">{{ item.songs.length }} 首音乐</n-text>
               </template>
             </n-thing>
           </n-list-item>
-        </n-list>
-      </n-scrollbar>
-    </template>
-    <!-- 本地歌曲只能添加到本地歌单 -->
-    <template v-else>
-      <n-scrollbar style="max-height: 70vh">
-        <n-list class="playlists-list" hoverable clickable>
-          <!-- 新建本地歌单 -->
-          <n-list-item class="playlist add" @click="openCreatePlaylist(true)">
-            <template #prefix>
-              <SvgIcon name="Add" :size="20" />
-            </template>
-            <n-thing title="创建新歌单" />
-          </n-list-item>
-          <!-- 本地歌单列表 -->
-          <template v-if="localPlaylists.length > 0">
-            <n-list-item
-              v-for="item in localPlaylists"
-              :key="item.id"
-              class="playlist"
-              @click="addToLocalPlaylist(item.id)"
-            >
-              <template #prefix>
-                <n-image
-                  :src="item.cover || '/images/album.jpg?asset'"
-                  class="cover"
-                  preview-disabled
-                  lazy
-                  @load="coverLoaded"
-                >
-                  <template #placeholder>
-                    <div class="cover-loading">
-                      <img class="loading-img" src="/images/album.jpg?asset" alt="loading-img" />
-                    </div>
-                  </template>
-                </n-image>
-              </template>
-              <n-thing :title="item.name">
-                <template #description>
-                  <n-text depth="3" class="size">{{ item.songs.length }} 首音乐</n-text>
-                </template>
-              </n-thing>
-            </n-list-item>
-          </template>
-          <n-empty v-else description="暂无本地歌单" style="padding: 40px 0" />
-        </n-list>
-      </n-scrollbar>
-    </template>
+        </template>
+        <n-empty v-else description="暂无本地歌单" style="padding: 40px 0" />
+      </n-list>
+    </n-scrollbar>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { SongType } from "@/types/main";
 import type { MessageReactive } from "naive-ui";
-import { useDataStore, useLocalStore } from "@/stores";
+import { useLocalStore } from "@/stores";
 import { coverLoaded } from "@/utils/helper";
-import { playlistTracks } from "@/api/playlist";
 import { debounce } from "lodash-es";
-import { isLogin, updateUserLikePlaylist, updateUserLikeSongs } from "@/utils/auth";
 import { openCreatePlaylist } from "@/utils/modal";
 
 const props = defineProps<{
@@ -110,51 +63,13 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const dataStore = useDataStore();
 const localStore = useLocalStore();
 
 // 加载提示
 const loadingMsg = ref<MessageReactive>();
 
-// 在线歌单
-const onlinePlaylists = computed(() => {
-  return (
-    dataStore.userLikeData.playlists.filter(
-      (playlist) => playlist.userId === dataStore.userData?.userId,
-    ) || []
-  );
-});
-
 // 本地歌单
 const localPlaylists = computed(() => localStore.localPlaylists);
-
-// 添加到在线歌单
-const addToOnlinePlaylist = debounce(
-  async (id: number, index: number) => {
-    if (isLogin() === 2) {
-      window.$message.warning("该登录模式暂不支持该操作");
-      return;
-    }
-    loadingMsg.value = window.$message.loading("正在添加歌曲至歌单", { duration: 0 });
-    const ids = props.data.map((item) => item.id).filter((item) => item !== 0);
-    const result = await playlistTracks(id, ids);
-    if (loadingMsg.value) loadingMsg.value.destroy();
-    if (result.status === 200) {
-      if (result.body?.code !== 200) {
-        window.$message.error(result.body?.message || "添加失败，请重试");
-        return;
-      }
-      emit("close");
-      window.$message.success("添加歌曲至歌单成功");
-      if (index === 0) await updateUserLikeSongs();
-      await updateUserLikePlaylist();
-    } else {
-      window.$message.error(result?.message || "添加失败，请重试");
-    }
-  },
-  500,
-  { leading: true, trailing: false },
-);
 
 // 添加到本地歌单
 const addToLocalPlaylist = debounce(

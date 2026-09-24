@@ -1,5 +1,4 @@
 import defaultDesktopLyricConfig from "@/assets/data/lyricConfig";
-import { useLyricManager } from "@/core/player/LyricManager";
 import { usePlayerController } from "@/core/player/PlayerController";
 import { useSettingStore, useStatusStore } from "@/stores";
 import type { LyricConfig } from "@/types/desktop-lyric";
@@ -11,7 +10,7 @@ import {
 } from "@/types/shared";
 import { isElectron, isWin, isMac } from "@/utils/env";
 import { descMultiline } from "@/utils/format";
-import { openAMLLServer, openExcludeLyric, openFontManager } from "@/utils/modal";
+import { openExcludeLyric, openFontManager } from "@/utils/modal";
 import { cloneDeep, isEqual } from "lodash-es";
 import LyricPreview from "../components/LyricPreview.vue";
 
@@ -19,7 +18,6 @@ export const useLyricSettings = (): SettingConfig => {
   const player = usePlayerController();
   const statusStore = useStatusStore();
   const settingStore = useSettingStore();
-  const lyricManager = useLyricManager();
 
   // 桌面歌词配置
   const desktopLyricConfig = reactive<LyricConfig>({ ...defaultDesktopLyricConfig });
@@ -114,7 +112,6 @@ export const useLyricSettings = (): SettingConfig => {
     if (isElectron) {
       getDesktopLyricConfig();
       getTaskbarLyricConfig();
-      await window.api.store.set("amllDbServer", settingStore.amllDbServer);
     }
   };
 
@@ -309,31 +306,6 @@ export const useLyricSettings = (): SettingConfig => {
               get: () => settingStore.showWordLyrics,
               set: (v) => (settingStore.showWordLyrics = v),
             }),
-            children: [
-              {
-                key: "enableQQMusicLyric",
-                label: "启用 QM 歌词",
-                type: "switch",
-                description: "启用从 QM 获取逐字歌词，模糊搜索，可能不准确",
-                show: isElectron,
-                value: computed({
-                  get: () => settingStore.enableQQMusicLyric,
-                  set: (v) => (settingStore.enableQQMusicLyric = v),
-                }),
-              },
-              {
-                key: "localLyricQQMusicMatch",
-                label: "本地歌曲使用 QM 歌词",
-                type: "switch",
-                disabled: computed(() => !settingStore.enableQQMusicLyric),
-                description: "为本地歌曲从 QM 匹配逐字歌词，如已有 TTML 歌词则跳过",
-                show: isElectron,
-                value: computed({
-                  get: () => settingStore.localLyricQQMusicMatch,
-                  set: (v) => (settingStore.localLyricQQMusicMatch = v),
-                }),
-              },
-            ],
           },
           {
             key: "showTran",
@@ -412,26 +384,6 @@ export const useLyricSettings = (): SettingConfig => {
         title: "歌词内容",
         items: [
           {
-            key: "lyricPriority",
-            label: "歌词源优先级",
-            type: "select",
-            description: "设置歌词获取的优先顺序",
-            options: computed(() => {
-              const options = [{ label: "自动", value: "auto" }];
-              if (settingStore.enableQQMusicLyric) {
-                options.push({ label: "QM 优先", value: "qm" });
-              }
-              if (settingStore.enableOnlineTTMLLyric) {
-                options.push({ label: "TTML 优先", value: "ttml" });
-              }
-              return options;
-            }),
-            value: computed({
-              get: () => settingStore.lyricPriority,
-              set: (v) => lyricManager.switchLyricSource(v),
-            }),
-          },
-          {
             key: "preferTraditionalChinese",
             label: "更喜欢繁体中文",
             type: "switch",
@@ -455,28 +407,6 @@ export const useLyricSettings = (): SettingConfig => {
                   get: () => settingStore.traditionalChineseVariant,
                   set: (v) => (settingStore.traditionalChineseVariant = v),
                 }),
-              },
-            ],
-          },
-          {
-            key: "enableOnlineTTMLLyric",
-            label: "启用在线 TTML 歌词",
-            type: "switch",
-            description:
-              "是否从 AMLL TTML DB 获取歌词（如有），TTML 歌词支持逐字、翻译、音译等功能，将会在下一首歌生效",
-            tags: [{ text: "Beta", type: "warning" }],
-            value: computed({
-              get: () => settingStore.enableOnlineTTMLLyric,
-              set: (v) => (settingStore.enableOnlineTTMLLyric = v),
-            }),
-            children: [
-              {
-                key: "amllDbServer",
-                label: "AMLL TTML DB 地址",
-                type: "button",
-                description: "AMLL TTML DB 地址，请确保地址正确，否则将导致歌词获取失败",
-                buttonLabel: "配置",
-                action: openAMLLServer,
               },
             ],
           },

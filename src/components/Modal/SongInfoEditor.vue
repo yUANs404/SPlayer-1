@@ -2,16 +2,6 @@
   <div class="song-info-editor">
     <n-tabs type="segment" animated>
       <n-tab-pane name="info" tab="信息" display-directive="show">
-        <!-- 在线匹配 -->
-        <n-flex class="match" justify="space-between" align="center">
-          <n-text>不想手动填写标签？</n-text>
-          <n-button type="primary" strong secondary @click="onlineMatch">
-            <template #icon>
-              <SvgIcon name="AutoFix" />
-            </template>
-            自动匹配标签
-          </n-button>
-        </n-flex>
         <n-scrollbar class="scrollbar">
           <n-form ref="infoFormRef" :model="infoFormData" :rules="infoFormRules" class="phone-form">
             <n-form-item label="文件名" path="fileName">
@@ -168,10 +158,8 @@ import type { ICommonTagsResult, IFormat } from "music-metadata";
 import { useMusicStore, useDataStore } from "@/stores";
 import { textRule } from "@/utils/rules";
 import { copyData } from "@/utils/helper";
-import { matchSong, songLyric } from "@/api/song";
-import { debounce, isArray, isEmpty, isObject } from "lodash-es";
+import { debounce } from "lodash-es";
 import { useBlobURLManager } from "@/core/resource/BlobURLManager";
-import { formatSongsList } from "@/utils/format";
 
 const props = defineProps<{
   song: SongType;
@@ -266,49 +254,6 @@ const getSongInfo = async () => {
   if (coverBuff)
     coverData.value = blobURLManager.createBlobURL(coverBuff as Buffer, coverType, path);
 };
-
-// 在线匹配
-const onlineMatch = debounce(
-  async () => {
-    try {
-      if (!props.song || !infoFormData.value.md5) return;
-      const { result } = await matchSong(
-        infoFormData.value.name || "",
-        infoFormData.value.artist || "",
-        infoFormData.value.album || "",
-        infoFormData.value.duration || 0,
-        infoFormData.value.md5,
-      );
-      const song = result.songs?.[0];
-      if (isEmpty(song)) {
-        window.$message.error("无法匹配，请修改信息后重试");
-        return;
-      } else {
-        const songData = formatSongsList([song])[0];
-        // console.log(songData);
-        // 更新数据
-        infoFormData.value = {
-          ...infoFormData.value,
-          name: songData.name,
-          artist: isArray(songData.artists)
-            ? songData.artists.map((ar: { name: string }) => ar.name).join(" / ")
-            : songData.artists,
-          album: isObject(songData.album) ? songData.album.name : songData.album,
-          alia: songData.alia,
-        };
-        // 获取歌词
-        const result = await songLyric(songData.id);
-        infoFormData.value.lyric = result.lrc.lyric;
-        window.$message.success("匹配成功");
-      }
-    } catch (error) {
-      console.error("Error online matching:", error);
-      window.$message.error("匹配出错，请重试");
-    }
-  },
-  300,
-  { leading: true, trailing: false },
-);
 
 // 修改封面
 const changeCover = async () => {

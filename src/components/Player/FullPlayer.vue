@@ -4,10 +4,10 @@
       <div
         v-if="statusStore.showFullPlayer"
         :style="{
-          cursor: statusStore.playerMetaShow || showComment ? 'auto' : 'none',
+          cursor: statusStore.playerMetaShow ? 'auto' : 'none',
           '--lyric-blend-mode': settingStore.lyricsBlendMode,
         }"
-        :class="['full-player', { 'fullscreen-comment': isFullscreenComment }]"
+        :class="['full-player']"
         @mouseleave="playerLeave"
         @mousemove="playerMove"
         @click="playerMove"
@@ -18,13 +18,6 @@
         <FullPlayerMobile v-if="isTablet" />
         <!-- 桌面端 -->
         <template v-else>
-          <!-- 独立歌词 -->
-          <Transition name="fade" mode="out-in">
-            <div v-if="showInstantLyrics" :key="instantLyrics.content" class="lrc-instant">
-              <span class="lrc">{{ instantLyrics.content }}</span>
-              <span v-if="instantLyrics.tran" class="lrc-tran">{{ instantLyrics.tran }}</span>
-            </div>
-          </Transition>
           <!-- 菜单 -->
           <PlayerMenu @mouseenter.stop="stopHide" @mouseleave.stop="resumeHide" />
           <!-- 全屏封面 -->
@@ -48,20 +41,8 @@
                   <PlayerData :center="playerDataCenter" />
                 </div>
               </Transition>
-              <!-- 半屏评论（左或右） -->
-              <PlayerComment
-                v-if="isHalfComment"
-                :hide-song-data="commentOnRight"
-                class="comment-half"
-                :class="{ visible: showComment }"
-                :style="commentHalfStyle"
-              />
               <!-- 右侧歌词 -->
-              <div
-                class="content-right"
-                :class="{ hidden: hideRightLyric }"
-                :style="layoutStyles.right"
-              >
+              <div class="content-right" :style="layoutStyles.right">
                 <PlayerData
                   v-if="showRightPlayerData"
                   :center="pureLyricMode || noLrc"
@@ -71,12 +52,6 @@
               </div>
             </div>
           </Transition>
-          <!-- 全屏评论 -->
-          <PlayerComment
-            v-if="!isHalfComment"
-            class="comment-full"
-            :class="{ visible: showComment }"
-          />
           <!-- 控制中心 -->
           <PlayerControl @mouseenter.stop="stopHide" @mouseleave.stop="resumeHide" />
           <!-- 音乐频谱 -->
@@ -119,27 +94,6 @@ const noLrc = computed<boolean>(() => {
 /** 是否处于纯净歌词模式 */
 const pureLyricMode = computed<boolean>(() => statusStore.pureLyricMode && musicStore.isHasLrc);
 
-/** 评论是否可见（综合判断） */
-const showComment = computed<boolean>(
-  () =>
-    statusStore.showPlayerComment &&
-    !musicStore.playSong.path &&
-    !statusStore.pureLyricMode &&
-    !isTablet.value,
-);
-
-/** 评论显示模式 */
-const commentDisplayMode = computed(() => settingStore.commentDisplayMode);
-
-/** 评论是否在右侧 */
-const commentOnRight = computed(() => commentDisplayMode.value === "right");
-
-/** 是否半屏评论（无歌词时回退全屏） */
-const isHalfComment = computed(() => commentDisplayMode.value !== "fullscreen" && !noLrc.value);
-
-/** 是否全屏评论 */
-const isFullscreenComment = computed(() => showComment.value && !isHalfComment.value);
-
 /** 主内容 key */
 const playerContentKey = computed(() => `${musicStore.playSong.id}-${statusStore.pureLyricMode}`);
 
@@ -159,25 +113,8 @@ const layoutStyles = computed(() => {
   };
 });
 
-/** 半屏评论定位样式 */
-const commentHalfStyle = computed(() => ({
-  ...(commentOnRight.value ? layoutStyles.value.right : layoutStyles.value.left),
-  [commentOnRight.value ? "right" : "left"]: "0",
-}));
-
 /** 是否显示左侧封面区域 */
-const showLeftContent = computed(
-  () =>
-    !pureLyricMode.value &&
-    !isFullscreenType.value &&
-    // 左半屏评论显示中时，隐藏左侧封面
-    !(showComment.value && isHalfComment.value && !commentOnRight.value),
-);
-
-/** 是否隐藏右侧歌词（右半屏评论显示时） */
-const hideRightLyric = computed(
-  () => showComment.value && isHalfComment.value && commentOnRight.value,
-);
+const showLeftContent = computed(() => !pureLyricMode.value && !isFullscreenType.value);
 
 /** 是否显示右侧 PlayerData */
 const showRightPlayerData = computed(
@@ -186,12 +123,7 @@ const showRightPlayerData = computed(
 
 /** 是否显示全屏封面 */
 const showFullScreenCover = computed(
-  () => isFullscreenType.value && !pureLyricMode.value && !showComment.value,
-);
-
-/** 是否显示顶部实时歌词 */
-const showInstantLyrics = computed(
-  () => showComment.value && (isFullscreenComment.value || commentOnRight.value),
+  () => isFullscreenType.value && !pureLyricMode.value,
 );
 
 /** 数据是否居中 */
@@ -202,16 +134,6 @@ const playerDataCenter = computed<boolean>(
     settingStore.playerType === "record" ||
     musicStore.playSong.type === "radio",
 );
-
-/** 当前实时歌词 */
-const instantLyrics = computed(() => {
-  const isYrc = musicStore.songLyric.yrcData?.length && settingStore.showWordLyrics;
-  const content = isYrc
-    ? musicStore.songLyric.yrcData[statusStore.lyricIndex]
-    : musicStore.songLyric.lrcData[statusStore.lyricIndex];
-  const contentStr = content?.words?.map((v) => v.word).join("") || "";
-  return { content: contentStr, tran: settingStore.showTran && content?.translatedLyric };
-});
 
 const {
   isPending,
@@ -293,23 +215,6 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(80px);
   overflow: hidden;
   z-index: 1000;
-  .lrc-instant {
-    position: absolute;
-    top: 0;
-    height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    pointer-events: none;
-    .lrc {
-      font-size: 18px;
-    }
-    .lrc-tran {
-      font-size: 14px;
-      opacity: 0.6;
-    }
-  }
   .player-content {
     position: absolute;
     display: flex;
@@ -355,17 +260,6 @@ onBeforeUnmount(() => {
         pointer-events: none;
       }
     }
-    .comment-half {
-      position: absolute;
-      height: 100%;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-      &.visible {
-        opacity: 1;
-        pointer-events: auto;
-      }
-    }
     &.pure {
       .content-right {
         align-items: center;
@@ -392,23 +286,6 @@ onBeforeUnmount(() => {
             transform: translateY(30vh);
           }
         }
-      }
-    }
-  }
-  .comment-full {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    &.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-  }
-  &.fullscreen-comment {
-    .player-content {
-      &:not(.pure) {
-        transform: scale(0.95);
-        opacity: 0;
       }
     }
   }

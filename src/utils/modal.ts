@@ -1,11 +1,8 @@
 import type { CoverType, UpdateInfoType, SettingType, SongType } from "@/types/main";
 import { CURRENT_AGREEMENT_VERSION } from "@/constants/agreement";
 import { NScrollbar } from "naive-ui";
-import { isLogin } from "./auth";
-import { isArray, isFunction } from "lodash-es";
-import { useDataStore, useSettingStore } from "@/stores";
-import router from "@/router";
-import type { StreamingServerConfig as StreamingServerConfigType } from "@/types/streaming";
+import { isFunction } from "lodash-es";
+import { useSettingStore } from "@/stores";
 
 // 单例弹窗管理：跟踪已打开的弹窗类型
 const openedModals = new Set<string>();
@@ -116,62 +113,6 @@ export const openContextMenuManager = async () => {
   });
 };
 
-// 用户登录
-export const openUserLogin = async (
-  showTip: boolean = false,
-  force: boolean = false,
-  onSuccess?: () => void,
-  disableUid: boolean = false,
-) => {
-  if (showTip) window.$message.warning("请登录后使用");
-  const { default: Login } = await import("@/components/Modal/Login/Login.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    maskClosable: false,
-    closeOnEsc: false,
-    closable: false,
-    style: { width: "400px" },
-    content: () => {
-      return h(Login, {
-        force,
-        disableUid,
-        onClose: () => modal.destroy(),
-        onSuccess: () => {
-          modal.destroy();
-          if (onSuccess) onSuccess();
-        },
-      });
-    },
-  });
-};
-
-/**
- * 跳转到歌手
- * @param data 歌手信息
- * @param id 歌手 id
- * @returns
- */
-export const openJumpArtist = async (data: SongType["artists"], id?: number) => {
-  // 若 data 为数组且只有一个元素，则直接跳转
-  if (isArray(data) && data.length <= 2 && id) {
-    router.push({ name: "artist", query: { id } });
-    return;
-  }
-  const { default: JumpArtist } = await import("@/components/Modal/JumpArtist.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "600px" },
-    title: "跳转到歌手",
-    content: () => {
-      return h(JumpArtist, { artist: data, onClose: () => modal.destroy() });
-    },
-  });
-};
-
 // 编辑歌曲信息
 export const openSongInfoEditor = async (song: SongType) => {
   const { default: SongInfoEditor } = await import("@/components/Modal/SongInfoEditor.vue");
@@ -191,7 +132,6 @@ export const openSongInfoEditor = async (song: SongType) => {
 // 添加到歌单
 export const openPlaylistAdd = async (data: SongType[], isLocal: boolean) => {
   if (!data.length) return window.$message.warning("请正确选择歌曲");
-  if (!isLogin() && !isLocal) return openUserLogin();
   const { default: PlaylistAdd } = await import("@/components/Modal/PlaylistAdd.vue");
   const modal = window.$modal.create({
     preset: "card",
@@ -210,8 +150,14 @@ export const openPlaylistAdd = async (data: SongType[], isLocal: boolean) => {
  * @param data 歌曲列表
  * @param isLocal 是否为本地音乐
  * @param playListId 歌单 id
+ * @param onSuccess 操作成功回调
  */
-export const openBatchList = async (data: SongType[], isLocal: boolean, playListId?: number) => {
+export const openBatchList = async (
+  data: SongType[],
+  isLocal: boolean,
+  playListId?: number,
+  onSuccess?: () => void,
+) => {
   const { default: BatchList } = await import("@/components/Modal/BatchList.vue");
   window.$modal.create({
     preset: "card",
@@ -221,22 +167,7 @@ export const openBatchList = async (data: SongType[], isLocal: boolean, playList
       maxWidth: "70vw",
     },
     title: "批量操作",
-    content: () => h(BatchList, { data, isLocal, playListId }),
-  });
-};
-
-// 云盘歌曲纠正
-export const openCloudMatch = async (id: number, index: number) => {
-  const { default: CloudMatch } = await import("@/components/Modal/CloudMatch.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "600px" },
-    title: "云盘歌曲纠正",
-    content: () => {
-      return h(CloudMatch, { id, index, onClose: () => modal.destroy() });
-    },
+    content: () => h(BatchList, { data, isLocal, playListId, onSuccess }),
   });
 };
 
@@ -286,48 +217,6 @@ export const openUpdatePlaylist = async (
           if (isFunction(func)) func();
         },
       });
-    },
-  });
-};
-
-// 下载歌曲
-export const openDownloadSong = async (song: SongType) => {
-  const dataStore = useDataStore();
-  if (!isLogin()) return openUserLogin();
-  // 是否可下载
-  if (!song) return window.$message.warning("请正确选择歌曲");
-  if (song.free !== 0 && dataStore.userData.vipType === 0 && !song?.pc) {
-    return window.$message.warning("账号会员等级不足，请提升权限");
-  }
-  const { default: DownloadModal } = await import("@/components/Modal/DownloadModal.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "600px" },
-    title: "下载歌曲",
-    content: () => {
-      return h(DownloadModal, { songId: song.id, onClose: () => modal.destroy() });
-    },
-  });
-};
-
-// 批量下载歌曲
-export const openDownloadSongs = async (songs: SongType[]): Promise<void> => {
-  if (!isLogin()) return openUserLogin();
-  if (!songs || songs.length === 0) {
-    window.$message.warning("请选择要下载的歌曲");
-    return;
-  }
-  const { default: DownloadModal } = await import("@/components/Modal/DownloadModal.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "600px" },
-    title: "批量下载",
-    content: () => {
-      return h(DownloadModal, { songs, onClose: () => modal.destroy() });
     },
   });
 };
@@ -453,22 +342,6 @@ export const openDescModal = (content: string, title: string = "歌单简介") =
   });
 };
 
-/** 打开音源管理弹窗 */
-export const openSongUnlockManager = async () => {
-  const { default: SongUnlockManager } =
-    await import("@/components/Modal/Setting/SongUnlockManager.vue");
-  window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "500px" },
-    title: "音源管理",
-    content: () => {
-      return h(SongUnlockManager);
-    },
-  });
-};
-
 /** 打开侧边栏显示管理弹窗 */
 export const openSidebarHideManager = async () => {
   const { default: SidebarHideManager } =
@@ -533,41 +406,6 @@ export const openCopyLyrics = async () => {
   });
 };
 
-/** 打开歌曲详情复制弹窗 */
-export const openCopySongInfo = async (songId: number) => {
-  const { default: CopySongInfo } = await import("@/components/Modal/CopySongInfo.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "500px" },
-    title: "歌曲详情复制",
-    content: () => {
-      return h(CopySongInfo, {
-        songId,
-        onClose: () => modal.destroy(),
-      });
-    },
-  });
-};
-
-/** 打开 AMLL 服务器配置弹窗 */
-export const openAMLLServer = async () => {
-  const { default: AMLLServer } = await import("@/components/Modal/Setting/AMLLServer.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "600px" },
-    title: "AMLL TTML DB 服务器配置",
-    content: () => {
-      return h(AMLLServer, {
-        onClose: () => modal.destroy(),
-      });
-    },
-  });
-};
-
 /** 打开字体管理弹窗 */
 export const openFontManager = async () => {
   const { default: FontManager } = await import("@/components/Modal/Setting/FontManager.vue");
@@ -594,38 +432,6 @@ export const openCustomCode = async () => {
     title: "自定义代码注入",
     content: () => {
       return h(CustomCode);
-    },
-  });
-};
-
-/**
- * 打开流媒体服务器配置弹窗
- * @param server 要编辑的服务器配置，为空时表示新增
- * @param onSave 保存回调
- */
-export const openStreamingServerConfig = async (
-  server: StreamingServerConfigType | null,
-  onSave: (config: Omit<StreamingServerConfigType, "id">) => void,
-) => {
-  const { default: StreamingServerConfig } =
-    await import("@/components/Modal/Setting/StreamingServerConfig.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    maskClosable: false,
-    closeOnEsc: false,
-    style: { width: "500px" },
-    title: server ? "编辑流媒体服务" : "添加流媒体服务",
-    content: () => {
-      return h(StreamingServerConfig, {
-        server,
-        onSave: (config: Omit<StreamingServerConfigType, "id">) => {
-          onSave(config);
-          modal.destroy();
-        },
-        onCancel: () => modal.destroy(),
-      });
     },
   });
 };
@@ -699,23 +505,6 @@ export const openExcludeLyric = async () => {
     title: "歌词排除",
     content: () => {
       return h(ExcludeLyrics, {
-        onClose: () => modal.destroy(),
-      });
-    },
-  });
-};
-
-/** 打开评论排除弹窗 */
-export const openExcludeComment = async () => {
-  const { default: ExcludeComment } = await import("@/components/Modal/Setting/ExcludeComment.vue");
-  const modal = window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "600px" },
-    title: "评论排除",
-    content: () => {
-      return h(ExcludeComment, {
         onClose: () => modal.destroy(),
       });
     },

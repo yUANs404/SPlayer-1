@@ -125,14 +125,10 @@
 
 <script setup lang="ts">
 import type { CoverType, SongType } from "@/types/main";
-import { albumDetail } from "@/api/album";
 import { formatNumber } from "@/utils/helper";
 import { useMusicStore, useStatusStore, useLocalStore, useSettingStore } from "@/stores";
 import { debounce } from "lodash-es";
-import { formatSongsList, removeBrackets } from "@/utils/format";
-import { songDetail } from "@/api/song";
-import { playlistAllSongs } from "@/api/playlist";
-import { radioAllProgram } from "@/api/radio";
+import { removeBrackets } from "@/utils/format";
 import { usePlayerController } from "@/core/player/PlayerController";
 import { formatTimestamp } from "@/utils/time";
 import CoverMenu from "@/components/Menu/CoverMenu.vue";
@@ -171,14 +167,6 @@ const isPlaying = (id: number | string) =>
 
 // 查看详情
 const goDetail = (item: CoverType) => {
-  // 流媒体歌单跳转到专门的路由
-  if (props.isStreaming && props.type === "playlist") {
-    router.push({
-      name: "streaming-playlist",
-      query: { id: item.id },
-    });
-    return;
-  }
   router.push({
     name: props.type,
     query: { id: item.id },
@@ -189,14 +177,6 @@ const goDetail = (item: CoverType) => {
 const playList = debounce(
   async (item: CoverType) => {
     try {
-      // 视频直接跳转
-      if (props.type === "video") {
-        return router.push({ name: "video", query: { id: item.id } });
-      }
-      // 流媒体歌单直接跳转到详情页
-      if (props.isStreaming && props.type === "playlist") {
-        return router.push({ name: "streaming-playlist", query: { id: item.id } });
-      }
       // 是否为当前列表
       if (musicStore.playPlaylistId === item.id) return player.playOrPause();
       // 开始加载
@@ -220,12 +200,6 @@ const getListData = async (id: number | string): Promise<SongType[]> => {
   const isLocalPlaylist = localStore.isLocalPlaylist(id);
 
   switch (props.type) {
-    case "album": {
-      const result = await albumDetail(Number(id));
-      const ids: number[] = result.songs.map((song: any) => song.id as number);
-      const songRes = await songDetail(ids);
-      return formatSongsList(songRes.songs);
-    }
     case "playlist": {
       // 本地歌单
       if (isLocalPlaylist) {
@@ -236,13 +210,7 @@ const getListData = async (id: number | string): Promise<SongType[]> => {
         }
         return result.songs;
       }
-      // 在线歌单：仅请求 100 首
-      const result = await playlistAllSongs(Number(id), 100);
-      return formatSongsList(result.songs);
-    }
-    case "radio": {
-      const result = await radioAllProgram(Number(id), 100);
-      return formatSongsList(result.programs);
+      return [];
     }
     default:
       return [];

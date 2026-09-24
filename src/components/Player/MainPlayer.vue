@@ -65,16 +65,6 @@
             >
               {{ statusStore.playRate }}x
             </n-tag>
-            <!-- 喜欢 -->
-            <SvgIcon
-              v-if="musicStore.playSong.type !== 'radio'"
-              :name="dataStore.isLikeSong(musicStore.playSong.id) ? 'Favorite' : 'FavoriteBorder'"
-              :size="20"
-              class="like"
-              @click="
-                toLikeSong(musicStore.playSong, !dataStore.isLikeSong(musicStore.playSong.id))
-              "
-            />
             <!-- 更多操作 -->
             <n-dropdown :options="songMoreOptions" trigger="click" placement="top-start">
               <SvgIcon name="FormatList" :size="20" :depth="2" class="more" />
@@ -97,30 +87,17 @@
               <!-- 歌手 -->
               <div v-else class="artists">
                 <TextContainer :speed="0.5" class="artists-container">
-                  <n-text
-                    v-if="musicStore.playSong.type === 'radio'"
-                    class="ar-item"
-                    @click="showCreatorTip"
-                  >
+                  <n-text v-if="musicStore.playSong.type === 'radio'" class="ar-item">
                     {{ musicStore.playSong.dj?.creator || "未知艺术家" }}
                   </n-text>
                   <template v-else-if="Array.isArray(musicStore.playSong.artists)">
-                    <n-text
-                      v-for="(item, index) in musicStore.playSong.artists"
-                      :key="index"
-                      class="ar-item"
-                      @click="openJumpArtist(musicStore.playSong.artists, item.id)"
-                    >
+                    <n-text v-for="(item, index) in musicStore.playSong.artists" :key="index" class="ar-item">
                       {{
                         settingStore.hideBracketedContent ? removeBrackets(item.name) : item.name
                       }}
                     </n-text>
                   </template>
-                  <n-text
-                    v-else
-                    class="ar-item"
-                    @click="openJumpArtist(musicStore.playSong.artists)"
-                  >
+                  <n-text v-else class="ar-item">
                     {{
                       settingStore.hideBracketedContent
                         ? removeBrackets(musicStore.playSong.artists)
@@ -137,30 +114,15 @@
     <!-- 控制 -->
     <n-flex :size="8" align="center" justify="center" class="play-control">
       <!-- 随机按钮 -->
-      <template v-if="musicStore.playSong.type !== 'radio' && !statusStore.personalFmMode">
-        <div class="play-icon" @click.stop="player.toggleShuffle()">
-          <SvgIcon
-            :name="statusStore.shuffleIcon"
-            :size="20"
-            :depth="statusStore.shuffleMode === 'off' ? 3 : 1"
-          />
-        </div>
-      </template>
-      <!-- 不喜欢 -->
-      <div
-        v-if="statusStore.personalFmMode"
-        class="play-icon"
-        v-debounce="
-          () =>
-            songManager.personalFMTrash(musicStore.personalFMSong?.id, () =>
-              player.nextOrPrev('next'),
-            )
-        "
-      >
-        <SvgIcon class="icon" :size="18" name="ThumbDown" />
+      <div class="play-icon" @click.stop="player.toggleShuffle()">
+        <SvgIcon
+          :name="statusStore.shuffleIcon"
+          :size="20"
+          :depth="statusStore.shuffleMode === 'off' ? 3 : 1"
+        />
       </div>
       <!-- 上一曲 -->
-      <div v-else class="play-icon" v-debounce="() => player.nextOrPrev('prev')">
+      <div class="play-icon" v-debounce="() => player.nextOrPrev('prev')">
         <SvgIcon :size="26" name="SkipPrev" />
       </div>
       <!-- 播放暂停 -->
@@ -190,24 +152,16 @@
         <SvgIcon :size="26" name="SkipNext" />
       </div>
       <!-- 循环按钮 -->
-      <template v-if="musicStore.playSong.type !== 'radio' && !statusStore.personalFmMode">
-        <div class="play-icon" @click.stop="player.toggleRepeat()">
-          <SvgIcon
-            :name="statusStore.repeatIcon"
-            :size="20"
-            :depth="statusStore.repeatMode === 'off' ? 3 : 1"
-          />
-        </div>
-      </template>
+      <div class="play-icon" @click.stop="player.toggleRepeat()">
+        <SvgIcon
+          :name="statusStore.repeatIcon"
+          :size="20"
+          :depth="statusStore.repeatMode === 'off' ? 3 : 1"
+        />
+      </div>
     </n-flex>
     <!-- 功能 -->
-    <Transition name="fade" mode="out-in">
-      <n-flex
-        :key="statusStore.personalFmMode ? 'fm' : 'normal'"
-        :size="[8, 0]"
-        class="play-menu"
-        justify="end"
-      >
+    <n-flex :size="[8, 0]" class="play-menu" justify="end">
         <!-- 时间相关 -->
         <Transition name="fade" mode="out-in">
           <n-flex
@@ -238,39 +192,26 @@
         </Transition>
         <!-- 功能区 -->
         <PlayerRightMenu />
-      </n-flex>
-    </Transition>
+    </n-flex>
   </div>
 </template>
 
 <script setup lang="ts">
 import { usePlayerController } from "@/core/player/PlayerController";
-import { useSongManager } from "@/core/player/SongManager";
-import { useDataStore, useMusicStore, useSettingStore, useStatusStore } from "@/stores";
-import { toLikeSong } from "@/utils/auth";
+import { useMusicStore, useSettingStore, useStatusStore } from "@/stores";
 import { useTimeFormat } from "@/composables/useTimeFormat";
 import { useSwipe } from "@vueuse/core";
-import { copyData, coverLoaded, renderIcon, getShareUrl } from "@/utils/helper";
-import {
-  openAutoClose,
-  openChangeRate,
-  openCopySongInfo,
-  openDownloadSong,
-  openJumpArtist,
-  openPlaylistAdd,
-} from "@/utils/modal";
+import { copyData, coverLoaded, renderIcon } from "@/utils/helper";
+import { openAutoClose, openChangeRate, openPlaylistAdd } from "@/utils/modal";
 import { convertSecondsToTime } from "@/utils/time";
 import { removeBrackets } from "@/utils/format";
 import type { DropdownOption } from "naive-ui";
 
-const router = useRouter();
-const dataStore = useDataStore();
 const musicStore = useMusicStore();
 const statusStore = useStatusStore();
 const settingStore = useSettingStore();
 
 const player = usePlayerController();
-const songManager = useSongManager();
 
 const { timeDisplay, toggleTimeFormat } = useTimeFormat();
 
@@ -294,9 +235,6 @@ const { direction } = useSwipe(playerRef, {
 const songMoreOptions = computed<DropdownOption[]>(() => {
   // 当前状态
   const song = musicStore.playSong;
-  const isHasMv = !!song?.mv && song.mv !== 0;
-  const isSong = song.type === "song";
-  const isLocal = !!song?.path;
   return [
     {
       key: "more",
@@ -311,43 +249,7 @@ const songMoreOptions = computed<DropdownOption[]>(() => {
           },
           icon: renderIcon("Copy", { size: 18 }),
         },
-        {
-          key: "code-id",
-          label: `复制${song.type === "song" ? "歌曲" : "节目"} ID`,
-          show: !isLocal,
-          props: {
-            onClick: () => copyData(song.id),
-          },
-          icon: renderIcon("Copy", { size: 18 }),
-        },
-        {
-          key: "copy-song-info",
-          label: "复制更多信息",
-          show: !isLocal && isSong,
-          props: {
-            onClick: () => openCopySongInfo(song.id),
-          },
-          icon: renderIcon("FormatList", { size: 18 }),
-        },
-        {
-          key: "share",
-          label: `分享${song.type === "song" ? "歌曲" : "节目"}链接`,
-          show: !isLocal,
-          props: {
-            onClick: () => copyData(getShareUrl(song.type, song.id), "已复制分享链接到剪切板"),
-          },
-          icon: renderIcon("Share", { size: 18 }),
-        },
       ],
-    },
-    {
-      key: "search",
-      label: "同名搜索",
-      show: settingStore.useOnlineService,
-      props: {
-        onClick: () => router.push({ name: "search", query: { keyword: song.name } }),
-      },
-      icon: renderIcon("Search"),
     },
     {
       key: "line",
@@ -357,48 +259,9 @@ const songMoreOptions = computed<DropdownOption[]>(() => {
       key: "playlist-add",
       label: "添加到歌单",
       props: {
-        onClick: () => openPlaylistAdd([song], isLocal),
+        onClick: () => openPlaylistAdd([song], true),
       },
       icon: renderIcon("AddList"),
-    },
-    {
-      key: "mv",
-      label: "观看 MV",
-      show: isSong && isHasMv,
-      props: {
-        onClick: () =>
-          router.push({ name: "video", query: { id: musicStore.playSong.mv, type: "mv" } }),
-      },
-      icon: renderIcon("Video", { size: 18 }),
-    },
-    {
-      key: "download",
-      label: "下载歌曲",
-      show: statusStore.isDeveloperMode && !isLocal && isSong,
-      props: { onClick: () => openDownloadSong(musicStore.playSong) },
-      icon: renderIcon("Download"),
-    },
-    {
-      key: "wiki",
-      label: "音乐百科",
-      show: !isLocal && isSong,
-      props: {
-        onClick: () => router.push({ name: "song-wiki", query: { id: musicStore.playSong.id } }),
-      },
-      icon: renderIcon("Info"),
-    },
-    {
-      key: "comment",
-      label: "查看评论",
-      show: !isLocal,
-      props: {
-        onClick: () => {
-          const id = musicStore.playSong.id;
-          const type = musicStore.playSong.type === "radio" ? 4 : 0;
-          router.push({ name: "comment", query: { id, type } });
-        },
-      },
-      icon: renderIcon("Message"),
     },
   ];
 });
@@ -427,9 +290,6 @@ const instantLyrics = computed(() => {
     ? `${contentStr}（ ${content?.translatedLyric} ）`
     : contentStr || "";
 });
-
-// 暂不支持查看主播主页
-const showCreatorTip = () => window.$message.info("暂不支持查看主播主页");
 </script>
 
 <style lang="scss" scoped>
@@ -535,19 +395,6 @@ const showCreatorTip = () => window.$message.info("暂不支持查看主播主�
         .n-tag {
           margin-left: 8px;
           flex-shrink: 0;
-        }
-        .like {
-          color: var(--primary-hex);
-          margin-left: 8px;
-          transition: transform 0.3s;
-          cursor: pointer;
-          flex-shrink: 0;
-          &:hover {
-            transform: scale(1.15);
-          }
-          &:active {
-            transform: scale(1);
-          }
         }
         .more {
           margin-left: 8px;

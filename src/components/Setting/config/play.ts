@@ -4,8 +4,6 @@ import { usePlayerController } from "@/core/player/PlayerController";
 import { isElectron, checkIsolationSupport } from "@/utils/env";
 import { renderOption } from "@/utils/helper";
 import { SettingConfig } from "@/types/settings";
-import { AI_AUDIO_LEVELS } from "@/utils/meta";
-import { openSongUnlockManager } from "@/utils/modal";
 import { NTooltip, SelectOption } from "naive-ui";
 import { uniqBy } from "lodash-es";
 
@@ -262,66 +260,6 @@ export const usePlaySettings = (): SettingConfig => {
     if (isElectron) getOutputDevices();
   };
 
-  // 音质数据
-  const songLevelData: Record<string, { label: string; tip: string; value: string }> = {
-    standard: { label: "标准音质", tip: "标准音质 128kbps", value: "standard" },
-    higher: { label: "较高音质", tip: "较高音质 328kbps", value: "higher" },
-    exhigh: { label: "极高 (HQ)", tip: "近CD品质的细节体验，最高320kbps", value: "exhigh" },
-    lossless: { label: "无损 (SQ)", tip: "高保真无损音质，最高48kHz/16bit", value: "lossless" },
-    hires: {
-      label: "高解析度无损 (Hi-Res)",
-      tip: "更饱满清晰的高解析度音质，最高192kHz/24bit",
-      value: "hires",
-    },
-    jyeffect: {
-      label: "高清臻音 (Spatial Audio)",
-      tip: "声音听感增强，96kHz/24bit",
-      value: "jyeffect",
-    },
-    jymaster: { label: "超清母带 (Master)", tip: "还原音频细节，192kHz/24bit", value: "jymaster" },
-    sky: {
-      label: "沉浸环绕声 (Surround Audio)",
-      tip: "沉浸式空间环绕音感，最高5.1声道",
-      value: "sky",
-    },
-    vivid: {
-      label: "臻音全景声 (Audio Vivid)",
-      tip: "极致沉浸三维空间音频，最高7.1.4声道",
-      value: "vivid",
-    },
-    dolby: {
-      label: "杜比全景声 (Dolby Atmos)",
-      tip: "杜比全景声音乐，沉浸式聆听体验",
-      value: "dolby",
-    },
-  };
-
-  // 动态计算音质选项
-  const songLevelOptions = computed(() => {
-    const options = Object.values(songLevelData);
-
-    if (settingStore.disableAiAudio) {
-      return options.filter((option) => {
-        if (option.value === "dolby") return true;
-        // 正确的类型转换或检查
-        return !AI_AUDIO_LEVELS.includes(option.value);
-      });
-    }
-    return options;
-  });
-
-  // 监听 Fuck AI Mode，重置不合法音质
-  watch(
-    () => settingStore.disableAiAudio,
-    (val) => {
-      if (!val) return;
-      // 正确的类型检查
-      if (AI_AUDIO_LEVELS.includes(settingStore.songLevel)) {
-        settingStore.songLevel = "hires";
-      }
-    },
-  );
-
   return {
     onActivate,
     groups: [
@@ -476,31 +414,6 @@ export const usePlaySettings = (): SettingConfig => {
         title: "音频设置",
         items: [
           {
-            key: "songLevel",
-            label: "在线歌曲音质",
-            type: "select",
-            description: () => songLevelData[settingStore.songLevel]?.tip,
-            options: songLevelOptions,
-            componentProps: {
-              renderOption,
-            },
-            value: computed({
-              get: () => settingStore.songLevel,
-              set: (v) => (settingStore.songLevel = v),
-            }),
-          },
-          {
-            key: "disableAiAudio",
-            label: "Fuck AI Mode",
-            type: "switch",
-            description:
-              "开启后将隐藏部分 AI 增强音质选项（如超清母带、沉浸环绕声等），但会保留杜比全景声",
-            value: computed({
-              get: () => settingStore.disableAiAudio,
-              set: (v) => (settingStore.disableAiAudio = v),
-            }),
-          },
-          {
             key: "disableDjMode",
             label: "Fuck DJ Mode",
             type: "switch",
@@ -602,17 +515,6 @@ export const usePlaySettings = (): SettingConfig => {
             defaultValue: 0,
           },
           {
-            key: "playSongDemo",
-            label: "播放试听",
-            type: "switch",
-            description: "是否在非会员状态下播放试听歌曲",
-            show: !isElectron,
-            value: computed({
-              get: () => settingStore.playSongDemo,
-              set: (v) => (settingStore.playSongDemo = v),
-            }),
-          },
-          {
             key: "playDevice",
             label: "音频输出设备",
             type: "select",
@@ -663,32 +565,6 @@ export const usePlaySettings = (): SettingConfig => {
                 }),
               },
             ],
-          },
-        ],
-      },
-      {
-        title: "音乐解锁",
-        tags: [{ text: "Beta", type: "warning" }],
-        show: isElectron,
-        items: [
-          {
-            key: "useSongUnlock",
-            label: "音乐解锁",
-            type: "switch",
-            description: "在无法正常播放时进行替换，可能会与原曲不符",
-            value: computed({
-              get: () => settingStore.useSongUnlock,
-              set: (v) => (settingStore.useSongUnlock = v),
-            }),
-          },
-          {
-            key: "songUnlockConfig",
-            label: "音源配置",
-            type: "button",
-            description: "配置歌曲解锁的音源顺序或是否启用",
-            buttonLabel: "配置",
-            action: openSongUnlockManager,
-            disabled: computed(() => !settingStore.useSongUnlock),
           },
         ],
       },

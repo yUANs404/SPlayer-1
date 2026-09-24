@@ -7,18 +7,6 @@
           <div class="menu-icon" @click.stop="statusStore.showFullPlayer = false">
             <SvgIcon name="Down" />
           </div>
-          <!-- 喜欢歌曲 -->
-          <div
-            v-if="
-              musicStore.playSong.type !== 'radio' && settingStore.fullscreenPlayerElements.like
-            "
-            class="menu-icon"
-            @click="toLikeSong(musicStore.playSong, !dataStore.isLikeSong(musicStore.playSong.id))"
-          >
-            <SvgIcon
-              :name="dataStore.isLikeSong(musicStore.playSong.id) ? 'Favorite' : 'FavoriteBorder'"
-            />
-          </div>
           <!-- 添加到歌单 -->
           <div
             v-if="settingStore.fullscreenPlayerElements.addToPlaylist"
@@ -27,61 +15,19 @@
           >
             <SvgIcon name="AddList" />
           </div>
-          <!-- 下载 -->
-          <div
-            class="menu-icon"
-            v-if="
-              !musicStore.playSong.path &&
-              statusStore.isDeveloperMode &&
-              settingStore.fullscreenPlayerElements.download
-            "
-            @click.stop="openDownloadSong(musicStore.playSong)"
-          >
-            <SvgIcon name="Download" />
-          </div>
-          <!-- 显示评论 -->
-          <n-badge
-            :value="formatCommentCount(statusStore.songCommentCount)"
-            v-if="showCommentButton"
-            :show="
-              statusStore.songCommentCount > 0 && settingStore.fullscreenPlayerElements.commentCount
-            "
-          >
-            <div
-              class="menu-icon"
-              @click.stop="statusStore.showPlayerComment = !statusStore.showPlayerComment"
-            >
-              <SvgIcon :depth="statusStore.showPlayerComment ? 1 : 3" name="Message" />
-            </div>
-          </n-badge>
         </n-flex>
         <div class="center">
           <div class="btn">
             <!-- 随机按钮 -->
-            <template v-if="musicStore.playSong.type !== 'radio' && !statusStore.personalFmMode">
-              <div class="btn-icon mode-icon" @click.stop="player.toggleShuffle()">
-                <SvgIcon
-                  :name="statusStore.shuffleIcon"
-                  :size="20"
-                  :depth="statusStore.shuffleMode === 'off' ? 3 : 1"
-                />
-              </div>
-            </template>
-            <!-- 不喜欢 -->
-            <div
-              v-if="statusStore.personalFmMode"
-              class="btn-icon"
-              v-debounce="
-                () =>
-                  songManager.personalFMTrash(musicStore.personalFMSong?.id, () =>
-                    player.nextOrPrev('next'),
-                  )
-              "
-            >
-              <SvgIcon class="icon" :size="18" name="ThumbDown" />
+            <div class="btn-icon mode-icon" @click.stop="player.toggleShuffle()">
+              <SvgIcon
+                :name="statusStore.shuffleIcon"
+                :size="20"
+                :depth="statusStore.shuffleMode === 'off' ? 3 : 1"
+              />
             </div>
             <!-- 上一曲 -->
-            <div v-else class="btn-icon" v-debounce="() => player.nextOrPrev('prev')">
+            <div class="btn-icon" v-debounce="() => player.nextOrPrev('prev')">
               <SvgIcon :size="26" name="SkipPrev" />
             </div>
             <!-- 播放暂停 -->
@@ -111,15 +57,13 @@
               <SvgIcon :size="26" name="SkipNext" />
             </div>
             <!-- 循环按钮 -->
-            <template v-if="musicStore.playSong.type !== 'radio' && !statusStore.personalFmMode">
-              <div class="btn-icon mode-icon" @click.stop="player.toggleRepeat()">
-                <SvgIcon
-                  :name="statusStore.repeatIcon"
-                  :size="20"
-                  :depth="statusStore.repeatMode === 'off' ? 3 : 1"
-                />
-              </div>
-            </template>
+            <div class="btn-icon mode-icon" @click.stop="player.toggleRepeat()">
+              <SvgIcon
+                :name="statusStore.repeatIcon"
+                :size="20"
+                :depth="statusStore.repeatMode === 'off' ? 3 : 1"
+              />
+            </div>
           </div>
           <!-- 进度条 -->
           <div
@@ -149,70 +93,17 @@
 
 <script setup lang="ts">
 import { usePlayerController } from "@/core/player/PlayerController";
-import { useSongManager } from "@/core/player/SongManager";
-import { useDataStore, useMusicStore, useStatusStore, useSettingStore } from "@/stores";
-import { toLikeSong } from "@/utils/auth";
+import { useMusicStore, useStatusStore, useSettingStore } from "@/stores";
 import { useTimeFormat } from "@/composables/useTimeFormat";
-import { openDownloadSong, openPlaylistAdd } from "@/utils/modal";
-import { getComment } from "@/api/comment";
-import { formatCommentCount } from "@/utils/format";
+import { openPlaylistAdd } from "@/utils/modal";
 
-const dataStore = useDataStore();
 const musicStore = useMusicStore();
 const statusStore = useStatusStore();
 const settingStore = useSettingStore();
 
-const songManager = useSongManager();
 const player = usePlayerController();
 
 const { timeDisplay, toggleTimeFormat } = useTimeFormat();
-
-// 获取评论数量
-const fetchCommentCount = async () => {
-  if (!showCommentButton.value || !settingStore.fullscreenPlayerElements.commentCount) return;
-  const id = musicStore.playSong.id;
-  if (!id || typeof id !== "number" || musicStore.playSong.path) return;
-  try {
-    const type = musicStore.playSong.type === "radio" ? 4 : 0;
-    const result = await getComment(id, type as 0 | 4, 1, 1);
-    if (result.data?.totalCount != null) {
-      statusStore.songCommentCount = result.data.totalCount;
-    }
-  } catch {
-    // 忽略错误
-  }
-};
-
-const showCommentButton = computed(
-  () =>
-    !musicStore.playSong.path &&
-    !statusStore.pureLyricMode &&
-    settingStore.fullscreenPlayerElements.comments,
-);
-
-// 歌曲变化时获取评论数量
-watch(
-  () => musicStore.playSong.id,
-  () => {
-    statusStore.songCommentCount = 0;
-    fetchCommentCount();
-  },
-);
-
-watch(
-  () => settingStore.fullscreenPlayerElements.commentCount,
-  (val) => {
-    if (val && statusStore.songCommentCount === 0) {
-      fetchCommentCount();
-    }
-  },
-);
-
-onMounted(() => {
-  if (musicStore.playSong.id && !musicStore.playSong.path) {
-    fetchCommentCount();
-  }
-});
 
 const showAutomixFx = ref(false);
 let automixFxTimer: number | null = null;

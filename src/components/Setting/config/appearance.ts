@@ -13,7 +13,6 @@ import {
 } from "@/utils/modal";
 import { SettingConfig } from "@/types/settings";
 import { computed, ref } from "vue";
-import { isLogin } from "@/utils/auth";
 
 export const useAppearanceSettings = (): SettingConfig => {
   const settingStore = useSettingStore();
@@ -355,49 +354,6 @@ export const useAppearanceSettings = (): SettingConfig => {
               get: () => settingStore.playerFollowCoverColor,
               set: (v) => (settingStore.playerFollowCoverColor = v),
             }),
-          },
-          {
-            key: "dynamicCover",
-            label: "动态封面",
-            type: "switch",
-            description: "可展示部分歌曲的动态封面，仅在封面模式有效",
-            value: computed({
-              get: () => settingStore.dynamicCover,
-              set: (v) => (settingStore.dynamicCover = v),
-            }),
-            forceIf: {
-              condition: () => isLogin() !== 1,
-              forcedValue: false,
-              forcedTitle: "请先正常登录",
-            },
-          },
-          {
-            key: "showPlayerComment",
-            label: "显示评论",
-            type: "switch",
-            description: "是否在全屏播放器中显示评论按钮",
-            value: computed({
-              get: () => settingStore.fullscreenPlayerElements.comments,
-              set: (v) => (settingStore.fullscreenPlayerElements.comments = v),
-            }),
-            condition: () => settingStore.fullscreenPlayerElements.comments,
-            children: [
-              {
-                key: "commentDisplayMode",
-                label: "评论显示模式",
-                type: "select",
-                description: "选择全屏播放器评论的显示方式",
-                options: [
-                  { label: "全屏", value: "fullscreen" },
-                  { label: "左半屏", value: "left" },
-                  { label: "右半屏", value: "right" },
-                ],
-                value: computed({
-                  get: () => settingStore.commentDisplayMode,
-                  set: (v) => (settingStore.commentDisplayMode = v),
-                }),
-              },
-            ],
           },
           {
             key: "showSpectrums",
