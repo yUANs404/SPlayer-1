@@ -11,7 +11,6 @@ import { SocketService } from "./services/SocketService";
 import { unregisterShortcuts } from "./shortcut";
 import { initTray, MainTray } from "./tray";
 import { isMac } from "./utils/config";
-import { trySendCustomProtocol } from "./utils/protocol";
 import { initSingleLock } from "./utils/single-lock";
 import loadWindow from "./windows/load-window";
 import mainWindow from "./windows/main-window";
@@ -131,12 +130,6 @@ class MainProcess {
       if (allWindows.length) {
         allWindows[0].focus();
       }
-    });
-
-    // 自定义协议
-    app.on("open-url", (_, url) => {
-      processLog.log("🔗 Received custom protocol URL:", url);
-      trySendCustomProtocol(url);
     });
 
     // 退出前

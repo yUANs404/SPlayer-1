@@ -84,12 +84,6 @@ export const sendLyric: (data: unknown) => void = throttle((data: unknown) => {
 }, 500);
 
 /**
- * 发送喜欢状态
- * @param isLiked 是否喜欢
- */
-export const sendLikeStatus = (isLiked: boolean) => sendIpc("like-status-change", isLiked);
-
-/**
  * 发送桌面歌词开关
  * @param show 是否显示
  */

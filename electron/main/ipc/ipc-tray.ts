@@ -48,11 +48,6 @@ const initTrayIpc = (): void => {
     tray?.setPlayMode(data.repeatMode, data.shuffleMode);
   });
 
-  // 喜欢状态切换
-  ipcMain.on("like-status-change", (_, likeStatus: boolean) => {
-    tray?.setLikeState(likeStatus);
-  });
-
   // 桌面歌词开关
   ipcMain.on("desktop-lyric:toggle", (_, val: boolean) => {
     tray?.setDesktopLyricShow(val);

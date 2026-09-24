@@ -5,7 +5,6 @@ import { join } from "path";
 import defaultLyricConfig from "../../../src/assets/data/lyricConfig";
 import type { LyricConfig } from "../../../src/types/desktop-lyric";
 import { storeLog } from "../logger";
-import { defaultAMLLDbServer } from "../utils/config";
 
 storeLog.info("🌱 Store init");
 
@@ -48,10 +47,6 @@ export interface StoreType {
       visible: boolean;
     };
   };
-  /** 代理 */
-  proxy: string;
-  /** amll-db-server */
-  amllDbServer: string;
   /** 缓存地址 */
   cachePath: string;
   /** 缓存大小限制 (GB) */
@@ -63,10 +58,6 @@ export interface StoreType {
     /** 端口 */
     port: number;
   };
-  /** 下载线程数 */
-  downloadThreadCount?: number;
-  /** 启用HTTP2下载 */
-  enableDownloadHttp2?: boolean;
   /** macOS 专属设置 */
   macos: {
     /** 状态栏歌词 */
@@ -107,8 +98,6 @@ export const useStore = () => {
           enabled: false,
         },
       },
-      proxy: "",
-      amllDbServer: defaultAMLLDbServer,
       cachePath: join(app.getPath("userData"), "DataCache"),
       cacheLimit: 10, // 默认 10GB
       // websocket
@@ -116,8 +105,6 @@ export const useStore = () => {
         enabled: false,
         port: 25885,
       },
-      downloadThreadCount: 8,
-      enableDownloadHttp2: true,
     },
   });
 };

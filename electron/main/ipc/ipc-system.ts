@@ -1,8 +1,7 @@
-import { app, ipcMain, net, powerSaveBlocker, session } from "electron";
+import { app, ipcMain, powerSaveBlocker } from "electron";
 import { ipcLog } from "../logger";
 import { getFonts } from "font-list";
 import { useStore } from "../store";
-import mainWindow from "../windows/main-window";
 
 /**
  * 初始化系统 IPC 通信
@@ -47,57 +46,6 @@ const initSystemIpc = (): void => {
     } catch (error) {
       ipcLog.error(`❌ Failed to get all system fonts: ${error}`);
       return [];
-    }
-  });
-
-  // 取消代理
-  ipcMain.on("remove-proxy", () => {
-    const mainWin = mainWindow.getWin();
-    store.set("proxy", "");
-    if (mainWin) {
-      mainWin?.webContents.session.setProxy({ proxyRules: "" });
-    }
-    ipcLog.info("✅ Remove proxy successfully");
-  });
-
-  // 配置网络代理
-  ipcMain.on("set-proxy", (_, config) => {
-    const mainWin = mainWindow.getWin();
-    if (!mainWin) return;
-    const proxyRules = `${config.protocol}://${config.server}:${config.port}`;
-    store.set("proxy", proxyRules);
-    mainWin?.webContents.session.setProxy({ proxyRules });
-    ipcLog.info("✅ Set proxy successfully:", proxyRules);
-  });
-
-  // 代理测试
-  ipcMain.handle("test-proxy", async (_, config) => {
-    const proxyRules = `${config.protocol}://${config.server}:${config.port}`;
-    try {
-      // 设置代理
-      const ses = session.defaultSession;
-      await ses.setProxy({ proxyRules });
-      // 测试请求
-      const request = net.request({ url: "https://www.baidu.com" });
-      return new Promise((resolve) => {
-        request.on("response", (response) => {
-          if (response.statusCode === 200) {
-            ipcLog.info("✅ Proxy test successful");
-            resolve(true);
-          } else {
-            ipcLog.error(`❌ Proxy test failed with status code: ${response.statusCode}`);
-            resolve(false);
-          }
-        });
-        request.on("error", (error) => {
-          ipcLog.error("❌ Error testing proxy:", error);
-          resolve(false);
-        });
-        request.end();
-      });
-    } catch (error) {
-      ipcLog.error("❌ Error testing proxy:", error);
-      return false;
     }
   });
 

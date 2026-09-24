@@ -38,11 +38,6 @@ class MainWindow {
    */
   private event(): void {
     if (!this.win) return;
-    const store = useStore();
-    // 配置网络代理
-    if (store.get("proxy")) {
-      this.win.webContents.session.setProxy({ proxyRules: store.get("proxy") });
-    }
 
     // 窗口打开处理程序
     this.win.webContents.setWindowOpenHandler((details) => {

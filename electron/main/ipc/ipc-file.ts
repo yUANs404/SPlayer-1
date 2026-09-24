@@ -4,7 +4,6 @@ import { isAbsolute, join, normalize, relative, resolve } from "node:path";
 import { Worker } from "node:worker_threads";
 import { ipcLog } from "../logger";
 import { LocalMusicService } from "../services/LocalMusicService";
-import { DownloadService } from "../services/DownloadService";
 import { MusicMetadataService } from "../services/MusicMetadataService";
 import { useStore } from "../store";
 import { chunkArray } from "../utils/helper";
@@ -12,8 +11,6 @@ import { processMusicList } from "../utils/format";
 
 /** 本地音乐服务 */
 const localMusicService = new LocalMusicService();
-/** 下载服务 */
-const downloadService = new DownloadService();
 /** 音乐元数据服务 */
 const musicMetadataService = new MusicMetadataService();
 
@@ -333,16 +330,6 @@ const initFileIpc = (): void => {
       ipcLog.error("❌ Path choose error", error);
       return null;
     }
-  });
-
-  // 下载文件
-  ipcMain.handle("download-file", (event, url, options) =>
-    downloadService.downloadFile(event, url, options),
-  );
-
-  // 取消下载
-  ipcMain.handle("cancel-download", async (_, songId: number) => {
-    return downloadService.cancelDownload(songId);
   });
 
   // 检查是否是相同的路径（规范化后比较）

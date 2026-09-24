@@ -24,7 +24,6 @@ let shuffleMode: ShuffleModeType = "off";
 // 全局数据
 let playState: PlayState = "pause";
 let playName: string = "未播放歌曲";
-let likeSong: boolean = false;
 let desktopLyricShow: boolean = false;
 let desktopLyricLock: boolean = false;
 let taskbarLyricShow: boolean = false;
@@ -32,7 +31,6 @@ let taskbarLyricShow: boolean = false;
 export interface MainTray {
   setTitle(title: string): void;
   setPlayMode(repeat: RepeatModeType, shuffle: ShuffleModeType): void;
-  setLikeState(like: boolean): void;
   setPlayState(state: PlayState): void;
   setPlayName(name: string): void;
   setDesktopLyricShow(show: boolean): void;
@@ -139,14 +137,8 @@ const createTrayMenu = (win: BrowserWindow): MenuItemConstructorOptions[] => {
       type: "separator",
     },
     {
-      id: "toggle-like-song",
-      label: likeSong ? "从我喜欢中移除" : "添加到我喜欢",
-      icon: getMenuIcon(likeSong ? "like" : "unlike"),
-      click: () => win.webContents.send("toggle-like-song"),
-    },
-    {
       id: "shuffle",
-      label: shuffleMode === "heartbeat" ? "心动模式" : "随机播放",
+      label: shuffleMode === "on" ? "随机播放" : "顺序播放",
       icon: getMenuIcon("shuffle"),
       type: "checkbox",
       checked: shuffleMode !== "off",
@@ -349,15 +341,6 @@ class CreateTray implements MainTray {
   setPlayMode(repeat: RepeatModeType, shuffle: ShuffleModeType) {
     repeatMode = repeat;
     shuffleMode = shuffle;
-    // 更新菜单
-    this.initTrayMenu();
-  }
-  /**
-   * 设置喜欢状态
-   * @param like 喜欢状态
-   */
-  setLikeState(like: boolean) {
-    likeSong = like;
     // 更新菜单
     this.initTrayMenu();
   }
