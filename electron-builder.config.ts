@@ -114,7 +114,6 @@ const config: Configuration = {
       NSDownloadsFolderUsageDescription:
         "Application requests access to the user's Downloads folder.",
     },
-    },
     target: [
       // DMG 安装版
       {

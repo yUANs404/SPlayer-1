@@ -283,7 +283,7 @@ export class AutomixManager {
     const analyzeTime = this.getAutomixAnalyzeTimeSec();
 
     this.ensureAutomixAnalysisInFlight = (async () => {
-      let currentPath =
+      const currentPath =
         playerController.currentAnalysisKey ||
         currentSong.path ||
         (playerController.currentAudioSource
