@@ -62,13 +62,6 @@ const config: Configuration = {
         target: "portable",
       },
     ],
-    // 注册协议
-    protocols: [
-      {
-        name: "Orpheus Protocol",
-        schemes: ["orpheus"],
-      },
-    ],
   },
   // NSIS 安装器配置
   nsis: {
@@ -120,13 +113,7 @@ const config: Configuration = {
         "Application requests access to the user's Documents folder.",
       NSDownloadsFolderUsageDescription:
         "Application requests access to the user's Downloads folder.",
-      // 注册协议
-      CFBundleURLTypes: [
-        {
-          CFBundleURLName: "Orpheus Protocol",
-          CFBundleURLSchemes: ["orpheus"],
-        },
-      ],
+    },
     },
     target: [
       // DMG 安装版
@@ -179,13 +166,6 @@ const config: Configuration = {
     maintainer: "imsyy.top",
     // 应用程序类别
     category: "Audio;Music;AudioVideo;",
-    // 桌面项
-    desktop: {
-      entry: {
-        // 注册协议
-        MimeType: "x-scheme-handler/orpheus;",
-      },
-    },
     syncDesktopName: true,
   },
   // AppImage 特定配置
