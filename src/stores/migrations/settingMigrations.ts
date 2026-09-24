@@ -1,12 +1,69 @@
 import { keywords, regexes } from "@/assets/data/exclude";
-import { SongUnlockServer } from "@/core/player/SongManager";
-import { defaultAMLLDbServer } from "@/utils/meta";
 import type { SettingState } from "../setting";
 
 /**
  * 当前设置 Schema 版本号
  */
-export const CURRENT_SETTING_SCHEMA_VERSION = 12;
+export const CURRENT_SETTING_SCHEMA_VERSION = 13;
+
+/**
+ * 已废弃的设置键（在线服务移除后不再使用）
+ * 迁移时会从持久化状态中清除
+ */
+export const REMOVED_SETTING_KEYS = [
+  "useOnlineService",
+  "shareUrlFormat",
+  "songLevel",
+  "playSongDemo",
+  "scrobbleSong",
+  "dynamicCover",
+  "proxyProtocol",
+  "proxyServe",
+  "proxyPort",
+  "useRealIP",
+  "realIP",
+  "useSongUnlock",
+  "songUnlockServer",
+  "useUnlockForDownload",
+  "enableOnlineTTMLLyric",
+  "enableQQMusicLyric",
+  "lyricPriority",
+  "localLyricQQMusicMatch",
+  "amllDbServer",
+  "enableTTMLLyric",
+  "preferQQMusicLyric",
+  "downloadPath",
+  "downloadThreadCount",
+  "fileNameFormat",
+  "folderStrategy",
+  "downloadMeta",
+  "downloadCover",
+  "downloadLyric",
+  "downloadLyricTranslation",
+  "downloadLyricRomaji",
+  "usePlaybackForDownload",
+  "saveMetaFile",
+  "downloadMakeYrc",
+  "downloadSaveAsAss",
+  "downloadLyricToTraditional",
+  "downloadLyricEncoding",
+  "enableDownloadHttp2",
+  "downloadSongLevel",
+  "commentDisplayMode",
+  "enableExcludeComments",
+  "excludeCommentKeywords",
+  "excludeCommentRegexes",
+  "enableSearchKeyword",
+  "showSearchHistory",
+  "showHotSearch",
+  "searchInputBehavior",
+  "clearSearchOnBlur",
+  "homePageSections",
+  "registryProtocol",
+  "lastfm",
+  "streamingEnabled",
+  "disableAiAudio",
+] as const;
 
 /**
  * 迁移函数类型
@@ -20,22 +77,6 @@ export type MigrationFunction = (state: Partial<SettingState>) => Partial<Settin
  * value: 从上一版本迁移到该版本的函数
  */
 export const settingMigrations: Record<number, MigrationFunction> = {
-  3: () => {
-    return {
-      // ttml 同步
-      enableTTMLLyric: false,
-      amllDbServer: defaultAMLLDbServer,
-    };
-  },
-  4: () => {
-    return {
-      songUnlockServer: [
-        { key: SongUnlockServer.BODIAN, enabled: true },
-        { key: SongUnlockServer.NETEASE, enabled: true },
-        { key: SongUnlockServer.KUWO, enabled: false },
-      ],
-    };
-  },
   5: (state) => {
     // 迁移排除歌词关键字和正则表达式到用户自定义字段
     // 如果旧字段存在且不为空，则迁移到新字段
@@ -79,8 +120,6 @@ export const settingMigrations: Record<number, MigrationFunction> = {
   },
   6: (state) => {
     interface OldSettingState extends Partial<SettingState> {
-      enableTTMLLyric?: boolean;
-
       hideDiscover?: boolean;
       hidePersonalFM?: boolean;
       hideRadioHot?: boolean;
@@ -96,20 +135,9 @@ export const settingMigrations: Record<number, MigrationFunction> = {
     const oldState = state as OldSettingState;
 
     return {
-      enableOnlineTTMLLyric: oldState.enableTTMLLyric,
-
       sidebarHide: {
-        hideDiscover: oldState.hideDiscover || false,
-        hidePersonalFM: oldState.hidePersonalFM || false,
-        hideRadioHot: oldState.hideRadioHot || false,
-        hideLike: oldState.hideLike || false,
-        hideCloud: oldState.hideCloud || false,
-        hideDownload: oldState.hideDownload || false,
         hideLocal: oldState.hideLocal || false,
         hideHistory: oldState.hideHistory || false,
-        hideUserPlaylists: oldState.hideUserPlaylists || false,
-        hideLikedPlaylists: oldState.hideLikedPlaylists || false,
-        hideHeartbeatMode: oldState.hideHeartbeatMode || false,
       },
     };
   },
@@ -166,36 +194,9 @@ export const settingMigrations: Record<number, MigrationFunction> = {
       excludeLyricsUserRegexes: oldState.excludeUserRegexes,
     };
   },
-  9: (state) => {
-    interface OldSettingState extends Partial<SettingState> {
-      preferQQMusicLyric?: boolean;
-    }
-    const oldState = state as OldSettingState;
-    const preferQM = oldState.preferQQMusicLyric ?? false;
-
-    return {
-      enableQQMusicLyric: preferQM,
-      lyricPriority: preferQM ? "qm" : "auto",
-    };
-  },
-  10: (state) => {
-    interface OldSettingState extends Partial<SettingState> {
-      clearSearchOnBlur?: boolean;
-    }
-    const oldState = state as OldSettingState;
-    return oldState.clearSearchOnBlur === true ? { searchInputBehavior: "clear" } : {};
-  },
   11: () => {
     return {
       uncensorMaskedProfanity: false,
-    };
-  },
-  12: (state) => {
-    // 移除已废弃的 gequbao 解锁源，清理老用户持久化设置中残留的条目
-    const servers = state.songUnlockServer;
-    if (!Array.isArray(servers)) return {};
-    return {
-      songUnlockServer: servers.filter((s) => (s.key as string) !== "gequbao"),
     };
   },
 };

@@ -373,22 +373,6 @@ export const openCoverManager = async () => {
   });
 };
 
-/** 打开首页栏目配置弹窗 */
-export const openHomePageSectionManager = async () => {
-  const { default: HomePageSectionManager } =
-    await import("@/components/Modal/Setting/HomePageSectionManager.vue");
-  window.$modal.create({
-    preset: "card",
-    transformOrigin: "center",
-    autoFocus: false,
-    style: { width: "500px" },
-    title: "首页栏目配置",
-    content: () => {
-      return h(HomePageSectionManager);
-    },
-  });
-};
-
 /** 打开复制歌词弹窗 */
 export const openCopyLyrics = async () => {
   const { default: CopyLyrics } = await import("@/components/Modal/CopyLyrics.vue");

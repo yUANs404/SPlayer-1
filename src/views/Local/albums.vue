@@ -7,13 +7,13 @@
         :id="key"
         :class="[
           'album-item',
-          { choose: chooseAlbum === key, 'no-cover': settingStore.hiddenCovers.album },
+          { choose: chooseAlbum === key, 'no-cover': settingStore.hideAllCovers },
         ]"
         @click="chooseAlbum = key"
       >
         <Transition name="fade" mode="out-in">
           <s-image
-            v-if="!settingStore.hiddenCovers.album"
+            v-if="!settingStore.hideAllCovers"
             :key="item?.[0]?.cover"
             :src="item?.[0]?.cover || '/images/album.jpg?asset'"
             class="cover"

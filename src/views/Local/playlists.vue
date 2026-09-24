@@ -6,7 +6,7 @@
         :data="playlistData"
         :loading="false"
         :show-size="false"
-        :hiddenCover="settingStore.hiddenCovers.playlist"
+        :hiddenCover="settingStore.hideAllCovers"
         type="playlist"
         empty-description="暂无本地歌单"
       />

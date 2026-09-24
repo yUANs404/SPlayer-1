@@ -34,19 +34,12 @@ type FullscreenPlayerElementKey = keyof SettingState["fullscreenPlayerElements"]
 type Item = { label: string; key: FullscreenPlayerElementKey; disabled?: boolean };
 
 const items = computed<Item[]>(() => [
-  { label: "显示喜欢按钮", key: "like" },
   { label: "显示添加到歌单", key: "addToPlaylist" },
-  { label: "显示下载按钮", key: "download" },
   { label: "显示桌面歌词", key: "desktopLyric" },
   { label: "显示更多设置", key: "moreSettings" },
   { label: "显示复制歌词", key: "copyLyric" },
   { label: "显示歌词调整", key: "lyricOffset" },
   { label: "显示歌词设置", key: "lyricSettings" },
-  {
-    label: "显示评论数量",
-    key: "commentCount",
-    disabled: !settingStore.fullscreenPlayerElements.comments,
-  },
 ]);
 
 const updateSetting = (key: FullscreenPlayerElementKey, val: boolean) => {

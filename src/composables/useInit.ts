@@ -1,6 +1,5 @@
 import { mediaSessionManager } from "@/core/player/MediaSessionManager";
 import { usePlayerController } from "@/core/player/PlayerController";
-import { useDownloadManager } from "@/core/resource/DownloadManager";
 import { useDataStore, useSettingStore, useShortcutStore, useStatusStore } from "@/stores";
 import { TASKBAR_IPC_CHANNELS } from "@/types/shared";
 import { isElectron, isMac } from "@/utils/env";
@@ -24,7 +23,6 @@ export const useInit = () => {
   const shortcutStore = useShortcutStore();
 
   const player = usePlayerController();
-  const downloadManager = useDownloadManager();
 
   // 事件监听
   initEventListener();
@@ -72,8 +70,6 @@ export const useInit = () => {
     if (isElectron) {
       // 注册全局快捷键
       shortcutStore.registerAllShortcuts();
-      // 初始化下载管理器
-      downloadManager.init();
       // 显示窗口
       window.electron.ipcRenderer.send("win-loaded");
       // 同步任务栏歌词状态

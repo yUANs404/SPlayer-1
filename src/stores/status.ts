@@ -1,9 +1,7 @@
 import type {
-  AudioSourceType,
   ColorScheme,
   QualityType,
   RGB,
-  SongLevelDataType,
   SortField,
   SortOrder,
   UpdateInfoType,
@@ -62,14 +60,8 @@ interface StatusState {
   };
   /** 纯净歌词模式 */
   pureLyricMode: boolean;
-  /** 当前是否正使用 TTML 歌词 */
-  usingTTMLLyric: boolean;
-  /** 当前是否正使用 QRC 歌词（来自QQ音乐） */
-  usingQRCLyric: boolean;
   /** 当前歌曲音质 */
   songQuality: QualityType | undefined;
-  /** 当前歌曲音源 */
-  audioSource: AudioSourceType | undefined;
   /** 当前播放索引 */
   playIndex: number;
   /** 歌词播放索引 */
@@ -94,10 +86,6 @@ interface StatusState {
   showDesktopLyric: boolean;
   /** 任务栏歌词 */
   showTaskbarLyric: boolean;
-  /** 播放器评论 */
-  showPlayerComment: boolean;
-  /** 私人FM模式 */
-  personalFmMode: boolean;
   /** 更新检查 */
   updateCheck: boolean;
   /** 有可用更新 */
@@ -153,20 +141,14 @@ interface StatusState {
     /** 是否为纯色模式 */
     isSolid: boolean;
   };
-  /** 可用音质列表 */
-  availableQualities: SongLevelDataType[];
   /** AB 循环 */
   abLoop: {
     enable: boolean;
     pointA: number | null;
     pointB: number | null;
   };
-  /** 侧边栏歌单显示模式 */
-  playlistMode: "online" | "local";
   automixFxSeq: number;
   automixEndedSeq: number;
-  /** 当前歌曲评论数量 */
-  songCommentCount: number;
 }
 
 export const useStatusStore = defineStore("status", {
@@ -187,10 +169,7 @@ export const useStatusStore = defineStore("status", {
     currentTimeOffsetMap: {},
     songCoverTheme: {},
     pureLyricMode: false,
-    usingTTMLLyric: false,
-    usingQRCLyric: false,
     songQuality: undefined,
-    audioSource: undefined,
     playIndex: -1,
     lyricIndex: -1,
     lyricLoading: false,
@@ -199,13 +178,11 @@ export const useStatusStore = defineStore("status", {
     playVolumeMute: 0,
     repeatMode: "off",
     shuffleMode: "off",
-    personalFmMode: false,
     mainContentHeight: 0,
     listSortField: "default",
     listSortOrder: "default",
     showDesktopLyric: false,
     showTaskbarLyric: false,
-    showPlayerComment: false,
     updateCheck: false,
     updateAvailable: false,
     updateInfo: null,
@@ -241,16 +218,13 @@ export const useStatusStore = defineStore("status", {
       /** 是否为纯色模式 */
       isSolid: false,
     },
-    availableQualities: [],
     abLoop: {
       enable: false,
       pointA: null,
       pointB: null,
     },
-    playlistMode: "online",
     automixFxSeq: 0,
     automixEndedSeq: 0,
-    songCommentCount: 0,
   }),
   getters: {
     // 播放音量图标
@@ -265,10 +239,7 @@ export const useStatusStore = defineStore("status", {
             : "VolumeUp";
     },
     /** 播放模式图标 */
-    shuffleIcon(state) {
-      if (state.shuffleMode === "heartbeat") {
-        return "HeartBit";
-      }
+    shuffleIcon() {
       return "Shuffle";
     },
     /** 循环模式图标 */
@@ -295,16 +266,6 @@ export const useStatusStore = defineStore("status", {
     /** 是否为开发者模式 */
     isDeveloperMode(state) {
       return state.developerMode || isDevBuild;
-    },
-    /** 是否解锁 */
-    isUnlocked(state) {
-      const audioSource = state.audioSource;
-      return (
-        !!audioSource &&
-        audioSource !== "official" &&
-        audioSource !== "local" &&
-        audioSource !== "streaming"
-      );
     },
   },
   actions: {
@@ -425,7 +386,6 @@ export const useStatusStore = defineStore("status", {
         playLoading: false,
         playListShow: false,
         showFullPlayer: false,
-        personalFmMode: false,
         playIndex: -1,
         repeatMode: "off",
         shuffleMode: "off",
@@ -457,7 +417,6 @@ export const useStatusStore = defineStore("status", {
       "listSortOrder",
       "showDesktopLyric",
       "showTaskbarLyric",
-      "personalFmMode",
       "autoClose",
       "eqEnabled",
       "eqBands",
@@ -465,7 +424,6 @@ export const useStatusStore = defineStore("status", {
       "developerMode",
       "themeBackgroundMode",
       "backgroundConfig",
-      "playlistMode",
     ],
   },
 });

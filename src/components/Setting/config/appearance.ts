@@ -5,7 +5,6 @@ import {
   openCustomCode,
   openThemeConfig,
   openSidebarHideManager,
-  openHomePageSectionManager,
   openPlaylistPageManager,
   openFullscreenPlayerManager,
   openCoverManager,
@@ -115,14 +114,6 @@ export const useAppearanceSettings = (): SettingConfig => {
             description: "配置需要在侧边栏显示的菜单项",
             buttonLabel: "配置",
             action: openSidebarHideManager,
-          },
-          {
-            key: "homePageSection",
-            label: "首页栏目",
-            type: "button",
-            description: "调整首页各栏目的显示顺序或隐藏不需要的栏目",
-            buttonLabel: "配置",
-            action: openHomePageSectionManager,
           },
           {
             key: "playlistPageElements",

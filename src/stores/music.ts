@@ -9,14 +9,6 @@ interface MusicState {
   playSong: SongType;
   playPlaylistId: number;
   songLyric: SongLyric;
-  personalFM: {
-    playIndex: number;
-    list: SongType[];
-  };
-  dailySongsData: {
-    timestamp: number | null;
-    list: SongType[];
-  };
 }
 
 // 默认音乐数据
@@ -27,8 +19,6 @@ const defaultMusicData: SongType = {
   album: "未知专辑",
   cover: "/images/song.jpg?asset",
   duration: 0,
-  free: 0,
-  mv: null,
   type: "song",
 };
 
@@ -42,16 +32,6 @@ export const useMusicStore = defineStore("music", {
     songLyric: {
       lrcData: [], // 普通歌词
       yrcData: [], // 逐字歌词
-    },
-    // 私人FM数据
-    personalFM: {
-      playIndex: 0,
-      list: [],
-    },
-    // 每日推荐
-    dailySongsData: {
-      timestamp: null, // 更新时间
-      list: [], // 歌曲数据
     },
   }),
   getters: {
@@ -72,10 +52,6 @@ export const useMusicStore = defineStore("music", {
       return state.playSong.path
         ? state.playSong.cover
         : state.playSong.coverSize?.s || state.playSong.cover;
-    },
-    // 私人FM播放歌曲
-    personalFMSong(state): SongType {
-      return state.personalFM.list?.[state.personalFM.playIndex] || defaultMusicData;
     },
   },
   actions: {

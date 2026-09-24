@@ -1,12 +1,10 @@
 import { usePlayerController } from "@/core/player/PlayerController";
 import * as playerIpc from "@/core/player/PlayerIpc";
-import { useDataStore, useMusicStore, useSettingStore, useStatusStore } from "@/stores";
+import { useMusicStore, useSettingStore, useStatusStore } from "@/stores";
 import type { SettingType } from "@/types/main";
 import { TASKBAR_IPC_CHANNELS, type TaskbarLyricSettings } from "@/types/shared";
-import { handleProtocolUrl } from "@/utils/protocol";
 import { cloneDeep } from "lodash-es";
 import { toRaw } from "vue";
-import { toLikeSong } from "./auth";
 import { sendTaskbarCoverColor } from "./color";
 import { isElectron, isMac } from "./env";
 import { getPlayerInfoObj } from "./format";
@@ -45,12 +43,6 @@ const initIpc = () => {
     // 播放模式切换
     window.electron.ipcRenderer.on("changeRepeat", (_, mode) => player.toggleRepeat(mode));
     window.electron.ipcRenderer.on("toggleShuffle", (_, mode) => player.toggleShuffle(mode));
-    // 喜欢歌曲
-    window.electron.ipcRenderer.on("toggle-like-song", async () => {
-      const dataStore = useDataStore();
-      const musicStore = useMusicStore();
-      await toLikeSong(musicStore.playSong, !dataStore.isLikeSong(musicStore.playSong.id));
-    });
     // 开启设置
     window.electron.ipcRenderer.on("openSetting", (_, type: SettingType, scrollTo?: string) =>
       openSetting(type, scrollTo),
@@ -195,11 +187,6 @@ const initIpc = () => {
       closeUpdateStatus();
       statusStore.updateDownloading = false;
       window.$message.error("更新过程出现错误");
-    });
-    // 协议数据
-    window.electron.ipcRenderer.on("protocol-url", (_, url) => {
-      console.log("📡 Received protocol url:", url);
-      handleProtocolUrl(url);
     });
     // 请求播放信息
     window.electron.ipcRenderer.on("request-track-info", () => {
