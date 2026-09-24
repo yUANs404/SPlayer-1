@@ -93,6 +93,8 @@ import { openPlaylistAdd } from "@/utils/modal";
 import { NInput, NInputNumber, NButton, NText } from "naive-ui";
 import { useLocalStore } from "@/stores";
 
+const localStore = useLocalStore();
+
 interface DataType {
   key?: number;
   id?: number;

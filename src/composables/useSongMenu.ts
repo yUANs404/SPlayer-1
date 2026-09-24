@@ -1,12 +1,6 @@
 import { DropdownOption } from "naive-ui";
 import { SongType } from "@/types/main";
-import {
-  useStatusStore,
-  useDataStore,
-  useMusicStore,
-  useSettingStore,
-  useLocalStore,
-} from "@/stores";
+import { useDataStore, useMusicStore, useSettingStore, useLocalStore } from "@/stores";
 import { usePlayerController } from "@/core/player/PlayerController";
 import { renderIcon, copyData } from "@/utils/helper";
 import { openPlaylistAdd, openSongInfoEditor } from "@/utils/modal";
@@ -15,7 +9,6 @@ import { openPlaylistAdd, openSongInfoEditor } from "@/utils/modal";
 export const useSongMenu = () => {
   const dataStore = useDataStore();
   const musicStore = useMusicStore();
-  const statusStore = useStatusStore();
   const settingStore = useSettingStore();
   const player = usePlayerController();
   const localStore = useLocalStore();
@@ -70,7 +63,7 @@ export const useSongMenu = () => {
   // 生成菜单选项
   const getMenuOptions = (
     song: SongType,
-    index: number = -1,
+    _index: number = -1,
     playListId: number = 0,
     _isDailyRecommend: boolean = false,
     emit?: (event: "removeSong", args: any[]) => void,
@@ -169,7 +162,9 @@ export const useSongMenu = () => {
               positiveText: "删除",
               negativeText: "取消",
               onPositiveClick: async () => {
-                await localStore.removeSongsFromLocalPlaylist(playListId, [song.id]);
+                await localStore.removeSongsFromLocalPlaylist(playListId, [
+                  song.id.toString(),
+                ]);
                 emit?.("removeSong", [song.id]);
                 window.$message.success("删除成功");
               },

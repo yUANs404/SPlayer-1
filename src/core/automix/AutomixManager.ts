@@ -1,7 +1,6 @@
 import { AudioScheduler } from "./AudioScheduler";
 import { getSharedAudioContext } from "./SharedAudioContext";
 import { useAudioManager } from "../player/AudioManager";
-import { useSongManager } from "../player/SongManager";
 import { usePlayerController } from "../player/PlayerController";
 import { useDataStore, useMusicStore, useSettingStore, useStatusStore } from "@/stores";
 import type {
@@ -15,7 +14,6 @@ import { isAudioAnalysis, isTransitionProposal, isAdvancedTransition } from "@/u
 import type { SongType } from "@/types/main";
 import { isElectron } from "@/utils/env";
 import { msToTime } from "@/utils/time";
-import { toFileUrl } from "@/utils/fileUrl";
 
 /**
  * 自动混音（Automix）管理器
@@ -152,35 +150,18 @@ export class AutomixManager {
   }
 
   /**
-   * 确保为 Automix 缓存并准备音频源
-   * @param song 歌曲对象
+   * 确保为 Automix 准备音频源
+   * 本地模式下音频源均为本地文件，直接返回原始地址
+   * @param _song 歌曲对象
    * @param audioSourceUrl 音频源 URL
-   * @param quality 音频质量
-   * @returns 缓存后的音频源 URL
+   * @param _quality 音频质量
+   * @returns 音频源 URL
    */
   public async ensureAutomixAudioSource(
-    song: SongType,
+    _song: SongType,
     audioSourceUrl: string,
-    quality?: string,
+    _quality?: string,
   ): Promise<string> {
-    const settingStore = useSettingStore();
-    if (
-      !isElectron ||
-      !settingStore.enableAutomix ||
-      settingStore.playbackEngine !== "web-audio" ||
-      !audioSourceUrl.startsWith("http")
-    ) {
-      return audioSourceUrl;
-    }
-
-    const songId = this.getSongIdForCache(song);
-    if (songId !== null) {
-      const songManager = useSongManager();
-      const cachedPath = await songManager.ensureMusicCachePath(songId, audioSourceUrl, quality);
-      if (cachedPath) {
-        return toFileUrl(cachedPath);
-      }
-    }
     return audioSourceUrl;
   }
 
@@ -302,24 +283,12 @@ export class AutomixManager {
     const analyzeTime = this.getAutomixAnalyzeTimeSec();
 
     this.ensureAutomixAnalysisInFlight = (async () => {
-      const songManager = useSongManager();
-
       let currentPath =
         playerController.currentAnalysisKey ||
         currentSong.path ||
         (playerController.currentAudioSource
           ? this.fileUrlToPath(playerController.currentAudioSource.url)
           : null);
-
-      if (!currentPath && currentId !== null) {
-        const quality = playerController.currentAudioSource?.quality;
-        const url = playerController.currentAudioSource?.url;
-        if (url && url.startsWith("http")) {
-          currentPath = await songManager.ensureMusicCachePath(currentId, url, quality);
-        } else {
-          currentPath = await songManager.getMusicCachePath(currentId, quality);
-        }
-      }
 
       if (token !== playerController.currentRequestToken) return;
 
@@ -337,26 +306,7 @@ export class AutomixManager {
         }
       }
 
-      let nextPath = nextInfo.song.path || null;
-      if (!nextPath && nextId !== null) {
-        const cached = await songManager.getMusicCachePath(nextId);
-        if (cached) {
-          nextPath = cached;
-        } else {
-          const prefetch = songManager.peekPrefetch(nextId);
-          if (!prefetch && settingStore.useNextPrefetch) {
-            await songManager.prefetchNextSong();
-          }
-          const updatedPrefetch = songManager.peekPrefetch(nextId);
-          const url = updatedPrefetch?.url;
-          const quality = updatedPrefetch?.quality;
-          if (url && url.startsWith("file://")) {
-            nextPath = this.fileUrlToPath(url);
-          } else if (url && url.startsWith("http")) {
-            nextPath = await songManager.ensureMusicCachePath(nextId, url, quality);
-          }
-        }
-      }
+      const nextPath = nextInfo.song.path || null;
 
       if (token !== playerController.currentRequestToken) return;
 
@@ -425,14 +375,12 @@ export class AutomixManager {
     const playerController = usePlayerController();
     const audioManager = useAudioManager();
     const settingStore = useSettingStore();
-    const statusStore = useStatusStore();
 
     if (
       !settingStore.enableAutomix ||
       audioManager.engineType === "mpv" ||
       audioManager.paused ||
-      playerController.isTransitioning ||
-      statusStore.personalFmMode
+      playerController.isTransitioning
     ) {
       if (this.automixState !== "IDLE") this.resetAutomixScheduling("IDLE");
       return;
@@ -597,7 +545,6 @@ export class AutomixManager {
       playerController.isTransitioning ||
       !statusStore.playStatus ||
       !settingStore.enableAutomix ||
-      statusStore.personalFmMode ||
       audioManager.engineType === "mpv"
     ) {
       this.resetAutomixScheduling("IDLE");

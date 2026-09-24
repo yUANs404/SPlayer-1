@@ -40,12 +40,16 @@ export const useDataStore = defineStore("data", {
     async loadData() {
       try {
         // 获取 music-data
-        const musicDataKeys = await musicDB.keys();
+        const musicDataKeys = (await musicDB.keys()) as string[];
         await Promise.all(
           musicDataKeys.map(async (key) => {
             const data = await musicDB.getItem(key);
-            if (["playList", "originalPlayList", "historyList"].includes(key)) {
-              this[key as keyof ListState] = data ? markRaw(data) : [];
+            if (key === "playList") {
+              this.playList = data ? markRaw(data as SongType[]) : [];
+            } else if (key === "originalPlayList") {
+              this.originalPlayList = data ? markRaw(data as SongType[]) : [];
+            } else if (key === "historyList") {
+              this.historyList = data ? markRaw(data as SongType[]) : [];
             }
           }),
         );

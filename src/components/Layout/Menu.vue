@@ -152,7 +152,7 @@ const renderMenuLabel = (option: MenuOption) => {
 };
 
 // 菜单项更改
-const menuUpdate = (key: string, item: MenuOption) => {
+const menuUpdate = (key: string, _item: MenuOption) => {
   emit("menu-click", key);
   if (typeof key === "string" && key.startsWith("local-")) {
     // 检查是否为本地歌单（16位数字ID）

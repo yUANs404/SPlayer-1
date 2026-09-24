@@ -9,7 +9,6 @@ import { getCoverColor } from "@/utils/color";
 import { isElectron, isMac } from "@/utils/env";
 import { getPlayerInfoObj, getPlaySongData } from "@/utils/format";
 import { handleSongQuality, shuffleArray, sleep } from "@/utils/helper";
-import lastfmScrobbler from "@/utils/lastfmScrobbler";
 import { DJ_MODE_KEYWORDS } from "@/utils/meta";
 import { calculateProgress } from "@/utils/time";
 import type { LyricLine } from "@applemusic-like-lyrics/lyric";
@@ -30,8 +29,6 @@ import { useSongManager } from "./SongManager";
 class PlayerController {
   /** 自动关闭定时器 */
   private autoCloseInterval: ReturnType<typeof setInterval> | undefined;
-  /** 最大重试次数 */
-  private readonly MAX_RETRY_COUNT = 3;
   /** 当前曲目重试信息（按歌曲维度） */
   private retryInfo: { songId: number | string; count: number } = { songId: 0, count: 0 };
   /** 当前播放请求标识 */
@@ -320,10 +317,9 @@ class PlayerController {
         initialRate = automixParams.initialRate;
       }
       if (requestToken !== this.currentRequestToken) return;
-      // 更新音质和音源信息
+      // 更新音质信息
       console.log(`🎧 [${playSongData.id}] 最终播放信息:`, audioSource);
       statusStore.songQuality = audioSource.quality;
-      statusStore.audioSource = audioSource.source;
       // 执行底层播放
       await this.loadAndPlay(
         audioSource.url,
@@ -341,86 +337,6 @@ class PlayerController {
         console.error("❌ 播放初始化失败:", error);
         this.handlePlaybackError(undefined);
       }
-    }
-  }
-
-  /**
-   * 切换音质（仅切换音频源，不重新加载歌词）
-   * @param seek 当前播放进度（毫秒）
-   * @param autoPlay 是否自动播放（默认保持当前状态）
-   */
-  async switchQuality(seek: number = 0, autoPlay?: boolean) {
-    const statusStore = useStatusStore();
-    const songManager = useSongManager();
-    const audioManager = useAudioManager();
-    const playSongData = getPlaySongData();
-    if (!playSongData || playSongData.path) return;
-    // 如果未指定 autoPlay，则保持当前播放状态
-    const shouldAutoPlay = autoPlay ?? statusStore.playStatus;
-    try {
-      statusStore.playLoading = true;
-      // 清除预取缓存，强制重新获取
-      songManager.clearPrefetch();
-      // 获取新音频源
-      const audioSource = await songManager.getAudioSource(playSongData);
-      if (!audioSource.url) {
-        window.$message.error("切换音质失败");
-        statusStore.playLoading = false;
-        return;
-      }
-      console.log(`🔄 [${playSongData.id}] 切换音质:`, audioSource);
-      // 更新音质和解锁状态
-      statusStore.songQuality = audioSource.quality;
-      statusStore.audioSource = audioSource.source;
-      // 停止当前播放
-      audioManager.stop();
-      // 执行底层播放，保持进度，保持原播放状态
-      await this.loadAndPlay(audioSource.url, shouldAutoPlay, seek);
-      statusStore.playLoading = false;
-    } catch (error) {
-      console.error("❌ 切换音质失败:", error);
-      statusStore.playLoading = false;
-      window.$message.error("切换音质失败");
-    }
-  }
-
-  /**
-   * 切换音频源
-   * @param source 音频源标识
-   */
-  public async switchAudioSource(source: string) {
-    const statusStore = useStatusStore();
-    const songManager = useSongManager();
-    const musicStore = useMusicStore();
-    const audioManager = useAudioManager();
-    const playSongData = musicStore.playSong;
-    if (!playSongData || playSongData.path) return;
-    try {
-      statusStore.playLoading = true;
-      // 清除预取缓存
-      songManager.clearPrefetch();
-      // 获取新音频源
-      const audioSource = await songManager.getAudioSource(playSongData, source);
-      if (!audioSource.url) {
-        window.$message.error("切换音频源失败：无法获取播放链接");
-        statusStore.playLoading = false;
-        return;
-      }
-      console.log(`🔄 [${playSongData.id}] 切换音频源:`, audioSource);
-      // 更新状态
-      statusStore.songQuality = audioSource.quality;
-      statusStore.audioSource = audioSource.source;
-      // 保持当前进度和播放状态
-      const seek = statusStore.currentTime;
-      const shouldAutoPlay = statusStore.playStatus;
-      // 停止当前播放
-      audioManager.stop();
-      await this.loadAndPlay(audioSource.url, shouldAutoPlay, seek);
-      statusStore.playLoading = false;
-    } catch (error) {
-      console.error("❌ 切换音频源失败:", error);
-      statusStore.playLoading = false;
-      window.$message.error("切换音频源失败");
     }
   }
 
@@ -586,7 +502,7 @@ class PlayerController {
     // 记录播放历史 (非电台)
     if (song.type !== "radio") dataStore.setHistory(song);
     // 更新歌曲数据
-    if (!song.path || song.type === "streaming") {
+    if (!song.path) {
       mediaSessionManager.updateMetadata();
       getCoverColor(musicStore.songCover);
     }
@@ -597,13 +513,6 @@ class PlayerController {
 
     // 预载下一首
     if (settingStore.useNextPrefetch) songManager.prefetchNextSong();
-
-    // Last.fm Scrobbler
-    if (settingStore.lastfm.enabled && settingStore.isLastfmConfigured) {
-      const { name, artist, album } = getPlayerInfoObj() || {};
-      const durationInSeconds = song.duration > 0 ? Math.floor(song.duration / 1000) : undefined;
-      lastfmScrobbler.startPlaying(name || "", artist || "", album, durationInSeconds);
-    }
   }
 
   /**
@@ -655,7 +564,6 @@ class PlayerController {
    * 统一音频事件绑定
    */
   private bindAudioEvents() {
-    const dataStore = useDataStore();
     const statusStore = useStatusStore();
     const musicStore = useMusicStore();
     const settingStore = useSettingStore();
@@ -669,7 +577,6 @@ class PlayerController {
 
     // 加载完成
     audioManager.addEventListener("canplay", () => {
-      const playSongData = getPlaySongData();
       // 结束加载
       statusStore.playLoading = false;
       // 恢复 EQ
@@ -680,8 +587,6 @@ class PlayerController {
         }
       }
       if (isElectron) {
-        // 更新喜欢状态
-        playerIpc.sendLikeStatus(dataStore.isLikeSong(playSongData?.id || 0));
         // 更新信息
         const { name, artist, album } = getPlayerInfoObj() || {};
         const playTitle = `${name} - ${artist}`;
@@ -700,8 +605,6 @@ class PlayerController {
       // 只有真正播放了才重置重试计数
       if (this.retryInfo.count > 0) this.retryInfo.count = 0;
       // 注意：failSkipCount 的重置移至 onTimeUpdate，确保有实际进度
-      // Last.fm Scrobbler
-      lastfmScrobbler.resume();
       // IPC 通知
       playerIpc.sendPlayStatus(true);
       playerIpc.sendTaskbarState({ isPlaying: true });
@@ -720,7 +623,6 @@ class PlayerController {
       playerIpc.sendTaskbarState({ isPlaying: false });
       playerIpc.sendTaskbarMode("paused");
       playerIpc.sendTaskbarProgress(statusStore.progress);
-      lastfmScrobbler.pause();
       console.log(`⏸️ [${musicStore.playSong?.id}] 歌曲暂停`);
     });
     // 拖动进度条
@@ -732,7 +634,6 @@ class PlayerController {
       if (this.isTransitioning) return;
       useAutomixManager().resetAutomixScheduling("IDLE");
       console.log(`⏹️ [${musicStore.playSong?.id}] 歌曲结束`);
-      lastfmScrobbler.stop();
       // 检查定时关闭
       if (this.checkAutoClose()) return;
       // 自动播放下一首
@@ -817,7 +718,7 @@ class PlayerController {
    * @param errCode 错误码
    * @param currentSeek 当前播放位置 (用于恢复)
    */
-  private async handlePlaybackError(errCode: number | undefined, currentSeek: number = 0) {
+  private async handlePlaybackError(errCode: number | undefined, _currentSeek: number = 0) {
     // 错误防抖
     const now = Date.now();
     if (now - this.lastErrorTime < 200) return;
@@ -859,7 +760,7 @@ class PlayerController {
       return;
     }
     // 本地文件错误
-    if (musicStore.playSong.path && musicStore.playSong.type !== "streaming") {
+    if (musicStore.playSong.path) {
       console.error("❌ 本地文件加载失败");
       window.$message.error("本地文件无法播放");
       statusStore.playLoading = false;
@@ -867,25 +768,11 @@ class PlayerController {
       await this.skipToNextWithDelay();
       return;
     }
-    // 在线/流媒体错误处理
-    this.retryInfo.count++;
-    console.warn(
-      `⚠️ 播放出错 (Code: ${errCode}), 重试: ${this.retryInfo.count}/${this.MAX_RETRY_COUNT}`,
-    );
-    // 未超过重试次数 -> 尝试重新获取 URL（可能是过期）
-    if (this.retryInfo.count <= this.MAX_RETRY_COUNT) {
-      await sleep(1000);
-      if (this.retryInfo.count === 1) {
-        statusStore.playLoading = true;
-        window.$message.warning("播放异常，正在尝试恢复...");
-      }
-      await this.playSong({ autoPlay: true, seek: currentSeek });
-      return;
-    }
-    // 超过重试次数 -> 跳下一首
-    console.error("❌ 超过最大重试次数，跳过当前歌曲");
+    // 非本地歌曲（历史遗留的在线数据）无法播放，直接跳过
+    console.warn(`⚠️ 歌曲 ${currentSongId} 非本地歌曲，无法播放，跳过`);
+    window.$message.warning("该歌曲为在线歌曲，本地播放不支持，已自动跳过");
+    statusStore.playLoading = false;
     this.retryInfo.count = 0;
-    window.$message.error("播放失败，已自动跳过");
     await this.skipToNextWithDelay();
   }
 
@@ -983,18 +870,11 @@ class PlayerController {
   ) {
     const dataStore = useDataStore();
     const statusStore = useStatusStore();
-    const songManager = useSongManager();
     // 先暂停当前播放
     const audioManager = useAudioManager();
     // 立即显示加载状态
     statusStore.playLoading = true;
     audioManager.stop();
-    // 私人FM
-    if (statusStore.personalFmMode) {
-      await songManager.initPersonalFM(true);
-      await this.playSong({ autoPlay: play });
-      return;
-    }
     // 播放列表是否为空
     const playListLength = dataStore.playList.length;
     if (playListLength === 0) {
@@ -1175,7 +1055,6 @@ class PlayerController {
     options: {
       showTip?: boolean;
       play?: boolean;
-      keepHeartbeatMode?: boolean;
     } = { showTip: true, play: true },
   ) {
     const dataStore = useDataStore();
@@ -1190,11 +1069,6 @@ class PlayerController {
     }
     // 更新列表
     await dataStore.setPlayList(processedData);
-    // 关闭心动模式
-    if (!options.keepHeartbeatMode && statusStore.shuffleMode === "heartbeat") {
-      statusStore.shuffleMode = "off";
-    }
-    if (statusStore.personalFmMode) statusStore.personalFmMode = false;
     // 确定播放索引
     if (song && song.id) {
       const newIndex = processedData.findIndex((s) => s.id === song.id);
@@ -1246,10 +1120,7 @@ class PlayerController {
     const dataStore = useDataStore();
     const musicStore = useMusicStore();
     const statusStore = useStatusStore();
-    const wasPersonalFm = statusStore.personalFmMode;
-    // 关闭特殊模式
-    if (statusStore.personalFmMode) statusStore.personalFmMode = false;
-    if (!wasPersonalFm && musicStore.playSong.id === song.id) {
+    if (musicStore.playSong.id === song.id) {
       await this.play();
       window.$message.success("已开始播放");
       return;
@@ -1453,8 +1324,6 @@ class PlayerController {
   /**
    * 切换随机模式
    * @param mode 可选，直接设置目标模式。如果不传则按 Off -> On -> Off 顺序轮转
-   * @note 心跳模式只能通过菜单开启（传入 "heartbeat" 参数），点击随机按钮不会进入心跳模式
-   * @note 当播放列表包含本地歌曲时，跳过心动模式，只在 Off 和 On 之间切换
    */
   public async toggleShuffle(mode?: ShuffleModeType) {
     const statusStore = useStatusStore();

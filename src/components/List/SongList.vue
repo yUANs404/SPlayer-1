@@ -428,10 +428,6 @@ const virtualListItems = computed<VirtualListItem[]>(() => {
 
 // 虚拟列表 key
 const listKey = computed(() => {
-  // 每日推荐
-  if (props.isDailyRecommend) {
-    return `daily-${musicStore.dailySongsData.timestamp || 0}`;
-  }
   // 使用 playListId 作为主要 key
   if (props.playListId) {
     return `playlist-${props.playListId}-${statusStore.listSortField}-${statusStore.listSortOrder}`;

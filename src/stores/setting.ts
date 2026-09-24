@@ -509,7 +509,7 @@ export const useSettingStore = defineStore("setting", {
         this.$patch(updates);
         // 清理已废弃的设置键（在线服务移除后残留的字段）
         for (const key of REMOVED_SETTING_KEYS) {
-          delete (this.$state as Record<string, unknown>)[key];
+          delete (this.$state as unknown as Record<string, unknown>)[key];
         }
         // 统一设置版本号
         this.schemaVersion = targetVersion;

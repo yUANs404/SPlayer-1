@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMusicStore, useSettingStore } from "@/stores";
+import { useMusicStore, useSettingStore, useStatusStore } from "@/stores";
 import { isObject } from "lodash-es";
 import { removeBrackets } from "@/utils/format";
 const props = defineProps<{
@@ -100,6 +100,7 @@ const props = defineProps<{
 }>();
 
 const musicStore = useMusicStore();
+const statusStore = useStatusStore();
 const settingStore = useSettingStore();
 
 // 当前歌词模式

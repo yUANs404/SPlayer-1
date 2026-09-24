@@ -326,12 +326,7 @@ export const getLyricLanguage = (lyric: string): "ja" | "ko" | "zh-CN" | "en" =>
  */
 export const getPlaySongData = (): SongType | null => {
   const dataStore = useDataStore();
-  const musicStore = useMusicStore();
   const statusStore = useStatusStore();
-  // 若为私人FM
-  if (statusStore.personalFmMode) {
-    return musicStore.personalFMSong;
-  }
   // 播放列表
   const playlist = dataStore.playList;
   if (!playlist.length) return null;

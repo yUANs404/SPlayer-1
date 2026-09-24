@@ -19,6 +19,8 @@ const defaultMusicData: SongType = {
   album: "未知专辑",
   cover: "/images/song.jpg?asset",
   duration: 0,
+  free: 0,
+  mv: null,
   type: "song",
 };
 

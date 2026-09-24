@@ -74,13 +74,20 @@ const settingStore = useSettingStore();
 // 本地数据统计
 const localSongCount = computed(() => localStore.localSongs?.length || 0);
 const localAlbumCount = computed(
-  () => new Set(localStore.localSongs?.map((song) => song.album?.name || song.album) || []).size,
+  () =>
+    new Set(
+      localStore.localSongs?.map((song) =>
+        typeof song.album === "object" ? song.album?.name : song.album,
+      ) || [],
+    ).size,
 );
 const localArtistCount = computed(() => {
   const artists = new Set<string>();
   localStore.localSongs?.forEach((song) => {
     if (Array.isArray(song.artists)) {
-      song.artists.forEach((ar) => artists.add(ar.name));
+      song.artists.forEach((ar) => {
+        if (typeof ar === "object" && ar?.name) artists.add(ar.name);
+      });
     } else if (song.artists) {
       artists.add(song.artists);
     }

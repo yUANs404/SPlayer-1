@@ -40,10 +40,12 @@
 <script setup lang="ts">
 import { useMobile } from "@/composables/useMobile";
 import { useBlobURLManager } from "@/core/resource/BlobURLManager";
-import { useMusicStore } from "@/stores";
+import { useMusicStore, useSettingStore, useStatusStore } from "@/stores";
 import { isElectron } from "@/utils/env";
 
 const musicStore = useMusicStore();
+const settingStore = useSettingStore();
+const statusStore = useStatusStore();
 
 const { isTablet } = useMobile();
 
