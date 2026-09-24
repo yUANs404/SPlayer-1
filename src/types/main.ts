@@ -1,5 +1,3 @@
-import { songLevelData } from "@/utils/meta";
-
 export type MetaData = {
   id: number;
   name: string;
@@ -311,18 +309,6 @@ export type SortField =
   | "updateTime";
 
 export type SortOrder = "default" | "asc" | "desc";
-
-/** 歌曲元素音质类型 */
-export type SongLevelType = keyof typeof songLevelData;
-
-/** 歌曲元素音质数据 */
-export type SongLevelDataType = {
-  name: string;
-  level: string;
-  value: SongLevelType;
-  size?: number;
-  br?: number;
-};
 
 // setting
 export type SettingType =
