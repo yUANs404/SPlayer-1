@@ -6,6 +6,14 @@
 >
 > 新功能及后续版本请移步 [SPlayer-Next](https://github.com/SPlayer-Dev/SPlayer-Next)
 
+> [!IMPORTANT]
+>
+> # 本仓库为「本地版」衍生版本（分支 `remove-online-playback`）
+>
+> 本分支**已彻底移除全部在线音乐服务与网络功能**（网易云音乐 API、登录账号、搜索、在线歌单、解灰、Last.fm、流媒体、下载、在线歌词等），仅保留本地音乐播放能力，并附带本地扫描回退与 FFmpeg 引擎解锁修复。
+>
+> **完整的移除模块清单与功能说明见 [LOCAL-EDITION.md](./LOCAL-EDITION.md)**
+
 <div align="center">
 <img alt="logo" height="100" width="100" src="public/icons/favicon.png" />
 <h2> SPlayer </h2>
