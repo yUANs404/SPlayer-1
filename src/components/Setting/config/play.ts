@@ -1,7 +1,7 @@
 import type { VNodeChild } from "vue";
 import { useSettingStore } from "@/stores";
 import { usePlayerController } from "@/core/player/PlayerController";
-import { isElectron, checkIsolationSupport } from "@/utils/env";
+import { isElectron } from "@/utils/env";
 import { renderOption } from "@/utils/helper";
 import { SettingConfig } from "@/types/settings";
 import { NTooltip, SelectOption } from "naive-ui";
@@ -77,7 +77,6 @@ export const usePlaySettings = (): SettingConfig => {
     {
       label: "FFmpeg",
       value: "ffmpeg",
-      disabled: !checkIsolationSupport(),
     },
     {
       label: "MPV",
@@ -93,11 +92,6 @@ export const usePlaySettings = (): SettingConfig => {
 
   // 处理引擎切换
   const handleAudioEngineSelect = async (value: "element" | "ffmpeg" | "mpv") => {
-    if (value === "ffmpeg" && !checkIsolationSupport()) {
-      window.$message.warning("当前环境不支持 FFmpeg 引擎，已回退至默认引擎");
-      return;
-    }
-
     const targetPlaybackEngine = value === "mpv" ? "mpv" : "web-audio";
     // 如果是切回 web-audio，且 value 为 element/ffmpeg，则更新 audioEngine
     const targetAudioEngine = value !== "mpv" ? value : settingStore.audioEngine;

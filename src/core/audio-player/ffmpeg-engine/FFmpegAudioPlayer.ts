@@ -210,6 +210,10 @@ export class FFmpegAudioPlayer extends BaseAudioPlayer {
     this.reset();
     this.dispatch("loadstart");
     try {
+      // 流式路径依赖 SharedArrayBuffer（跨源隔离），本地文件路径不受影响
+      if (typeof SharedArrayBuffer === "undefined") {
+        throw new Error("流媒体播放需要跨源隔离支持，本地文件请使用 file:// 路径");
+      }
       const response = await fetch(url, { method: "HEAD" });
       if (!response.ok) {
         throw new Error(`Failed to fetch metadata: ${response.statusText}`);

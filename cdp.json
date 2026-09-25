@@ -1,0 +1,9 @@
+[ {
+   "description": "",
+   "devtoolsFrontendUrl": "/devtools/inspector.html?ws=127.0.0.1:9222/devtools/page/402AC39320B4498880699F50592DDC04",
+   "id": "402AC39320B4498880699F50592DDC04",
+   "title": "SPlayer",
+   "type": "page",
+   "url": "http://localhost:25884/#/",
+   "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/402AC39320B4498880699F50592DDC04"
+} ]

@@ -1,5 +1,5 @@
 import { useSettingStore } from "@/stores";
-import { checkIsolationSupport, isElectron } from "@/utils/env";
+import { isElectron } from "@/utils/env";
 import { TypedEventTarget } from "@/utils/TypedEventTarget";
 import { AudioElementPlayer } from "../audio-player/AudioElementPlayer";
 import { AUDIO_EVENTS, type AudioEventMap } from "../audio-player/BaseAudioPlayer";
@@ -43,19 +43,17 @@ class AudioManager extends TypedEventTarget<AudioEventMap> implements IPlaybackE
     super();
 
     // 根据设置选择引擎
+    // FFmpeg 引擎的本地文件路径（file://）通过 WORKERFS 挂载整文件解码，
+    // 不依赖 SharedArrayBuffer（仅远程流式路径需要），因此无需跨源隔离门槛
     if (isElectron && playbackEngine === "mpv") {
       const mpvPlayer = useMpvPlayer();
       mpvPlayer.init();
       this.engine = mpvPlayer;
       this.engineType = "mpv";
-    } else if (audioEngine === "ffmpeg" && checkIsolationSupport()) {
+    } else if (audioEngine === "ffmpeg") {
       this.engine = new FFmpegAudioPlayer();
       this.engineType = "ffmpeg";
     } else {
-      if (audioEngine === "ffmpeg" && !checkIsolationSupport()) {
-        console.warn("[AudioManager] 环境未隔离，从 FFmpeg 回退到 Web Audio");
-      }
-
       this.engine = new AudioElementPlayer();
       this.engineType = "element";
     }
